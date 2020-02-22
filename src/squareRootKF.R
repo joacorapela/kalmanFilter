@@ -1,5 +1,4 @@
 squareRootKF <- function(A, B, C, D, xHat0, SRSigmaX0, SRSigmaW, SRSigmaV, us, zs) {
-#  filterLDS <- function(x, A, Gamma, C, Sigma, mu0, V0) {
     # from Kalman Filter course by Gregory Plet
     # thttp://mocha-java.uccs.edu/ECE5550/ECE5550-Notes05.pdf
     # Translation between Plett's (this file) and Bishop's notation
@@ -21,6 +20,7 @@ squareRootKF <- function(A, B, C, D, xHat0, SRSigmaX0, SRSigmaW, SRSigmaV, us, z
     leftSolve <- function(a, b) {
         return(solve(t(t(a), t(b))))
     }
+    Sigma <- SRSigmaV%*%t(SRSigmaV)
     nObs <- ncol(zs)
     SigmaX <- list()
     L <- list()
@@ -37,9 +37,9 @@ squareRootKF <- function(A, B, C, D, xHat0, SRSigmaX0, SRSigmaW, SRSigmaV, us, z
         u <- us[, k]
         # SR-KF Step 1a: State estimate time update
         if(k==1) {
-            xHat[,k] <- A%*%xHat0 + B%*%u; # use prior value of "u"
+            xHat[,k] <- A%*%xHat0 + B%*%u # use prior value of "u"
         } else {
-            xHat[,k] <- A%*%xHat[,k-1] + B%*%u; # use prior value of "u"
+            xHat[,k] <- A%*%xHat[,k-1] + B%*%u # use prior value of "u"
         }
         # SR-KF Step 1b: Error covariance time update
         SRSigmaX <- t(qr(t(cbind(A%*%SRSigmaX, SRSigmaW)))$qr)
@@ -47,22 +47,22 @@ squareRootKF <- function(A, B, C, D, xHat0, SRSigmaX0, SRSigmaW, SRSigmaV, us, z
         SRSigmaX[upper.tri(x=SRSigmaX)] <- 0
         SigmaX[[k]] <- SRSigmaX%*%t(SRSigmaX)
         # SR-KF Step 1c: Estimate system output
-        zhat <- C%*%xHat[,k]+D%*%u
+        zHat <- C%*%xHat[,k]+D%*%u
         # SR-KF Step 2a: Compute Kalman gain matrix
         # Note: "help mrdivide" to see how "division" is implemented
         SRSigmaZ <- t(qr(t(cbind(C%*%SRSigmaX, SRSigmaV)))$qr)
-        SRSigmaZ <- SRSigmaZ[1:nrow(zhat),1:nrow(zhat)]
+        SRSigmaZ <- SRSigmaZ[1:nrow(zHat),1:nrow(zHat)]
         SRSigmaZ[upper.tri(x=SRSigmaZ)] <- 0
         L[[k]] <- lsolve(a=SRSigmaZ, b=lsolve(a=t(SRSigmaZ), b=(SRSigmaX%*%t(SRSigmaX))%*%t(C)))
         # SR-KF Step 2b: State estimate measurement update
-        xHat[,k] <- xHat[,k]+L[[k]]%*%(z-zhat);
+        xHat[,k] <- xHat[,k]+L[[k]]%*%(z-zHat);
         # SR-KF Step 2c: Error covariance measurement update
         SRSigmaX <- chol_downdate_higherOrder(L=SRSigmaX, U=L[[k]]%*%SRSigmaZ)
         # [Store information for evaluation/plotting purposes]
         SigmaXHat[[k]] <- SRSigmaX%*%t(SRSigmaX)
         if(k>1) {
             mean_cn <- C%*%A%*%xHat[,k-1]
-            sigma_cn <- C%*%SigmaX[[k]]%*%t(C)+SRSigmaV%*%t(SRSigmaV)
+            sigma_cn <- C%*%SigmaX[[k]]%*%t(C)+Sigma
             # sigmaCn <- makeSymmetricMatrix(m=sigmaCn)
             c[k] <- dmvnorm(x=z, mean=mean_cn, sigma=sigma_cn)
         }

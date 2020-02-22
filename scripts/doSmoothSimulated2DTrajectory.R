@@ -1,5 +1,6 @@
 library(ggplot2)
 library(mvtnorm)
+library(plotly)
 
 source("../src/smoothLDS.R")
 source("getNormalEllipse.R")
@@ -12,10 +13,10 @@ processAll <- function() {
     ellipsePointSize <- .1
     xlab <- "x"
     ylab <- "y"
-    simulationFilename <- "results/simulation.RData"
-    filterResFilename <- "results/filterResSimulation.RData"
+    simulationFilename <- "results/simulation2DTrajectory.RData"
+    filterResFilename <- "results/filterResSimulation2DTrajectory.RData"
     smoothResFilename <- "results/smoothResSimulation.RData"
-    smoothResFigFilename <- "figures/smoothResSimulation.png"
+    smoothResFigFilename <- "figures/smoothResSimulation2DTrajectory.png"
 
     simRes <- get(load(simulationFilename))
     filterRes <- get(load(filterResFilename))
@@ -43,6 +44,7 @@ processAll <- function() {
     p <- p + geom_vline(xintercept=0)
     p <- p + xlab(xlab)
     p <- p + ylab(ylab)
+    p <- p + theme(legend.title = element_blank()) 
 
     for(i in seq(from=1, to=nObs, by=byEllipsePlot)) {
         ellipse <- getNormalEllipse(mu=smoothRes$muHat[,i], 
@@ -56,6 +58,7 @@ processAll <- function() {
 
     ggsave(filename=smoothResFigFilename, plot=p)
 
+    p <- ggplotly(p)
     print(p)
 
     browser()
