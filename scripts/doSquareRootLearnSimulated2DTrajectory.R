@@ -1,4 +1,5 @@
 
+require(ramcmc)
 require(plotly)
 require(mvtnorm)
 require(gridExtra)
