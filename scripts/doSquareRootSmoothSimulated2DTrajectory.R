@@ -1,5 +1,6 @@
 library(ggplot2)
 library(mvtnorm)
+library(plotly)
 
 source("../src/smoothLDS.R")
 source("getNormalEllipse.R")
@@ -57,6 +58,7 @@ processAll <- function() {
 
     ggsave(filename=smoothResFigFilename, plot=p)
 
+    p <- ggplotly(p)
     print(p)
 
     browser()
