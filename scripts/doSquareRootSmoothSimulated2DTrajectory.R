@@ -9,7 +9,7 @@ processAll <- function() {
     ellipseNPoints <- 100
     ellipseCriticalValue <- .95
     ellipseCol <- "red"
-    propByEllipsePlot <- .10
+    propByEllipsePlot <- .01
     ellipsePointSize <- .1
     xlab <- "x"
     ylab <- "y"
