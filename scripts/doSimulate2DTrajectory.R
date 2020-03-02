@@ -1,4 +1,5 @@
 require(ggplot2)
+require(plotly)
 require(R.matlab)
 
 source("../src/simulateLDS.R")
@@ -6,7 +7,7 @@ source("../src/simulateLDS.R")
 processAll <- function() {
     measurementNoiseSD <- 1e-3
     stateNoiseSD <- 1e-3
-    dObs <- 4*4
+    dObs <- 4
     nObs <- 1000
     latentsVarPrior <- 10
     xlab <- "x"
@@ -60,6 +61,7 @@ processAll <- function() {
     p <- p + theme(legend.title = element_blank()) 
     ggsave(filename=simulationFigFilename, plot=p)
 
+    p <- ggplotly(p)
     print(p)
 
     browser()
