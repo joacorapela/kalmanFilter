@@ -1,5 +1,5 @@
 
-emEstimationSquareRootKF <- function(zs, A0, SRSigmaW0, C0, SRSigmaV0, B0, D0, xHat00, SRSigmaX00, nIter=Inf, tol=-Inf, varsToEstimate=list(initialStateMean=TRUE, initialStateCovariance=TRUE, transitionMatrix=TRUE, transitionCovariance=TRUE, observationMatrix=TRUE, observationCovariance=TRUE)) {
+emEstimationSquareRootKF <- function(zs, A0, SRSigmaW0, C0, SRSigmaV0, B0, D0, xHat00, SRSigmaX00, nIter=Inf, tol=-Inf, varsToEstimate=list(initialStateMean=TRUE, initialStateCovariance=TRUE, transitionMatrix=TRUE, transitionCovariance=TRUE, observationMatrix=TRUE, observationCovariance=TRUE), logMsgPattern="loglik(iter=%%04d)=%%.4f") {
 
     if(!is.finite(nIter) && !is.finite(tol)) {
         stop("nIter and tol cannot be both infinite")
@@ -35,7 +35,7 @@ emEstimationSquareRootKF <- function(zs, A0, SRSigmaW0, C0, SRSigmaV0, B0, D0, x
         if(is.finite(logLikelihood)) {
             logLikelihoodIncrease <- logLikelihood-lastLogLikelihood
         }
-        print(sprintf("loglik(iter=%04d)=%.4f", iter, logLikelihood))
+        print(sprintf(logMsgPattern, iter, logLikelihood))
         logLikelihoods <- c(logLikelihoods, logLikelihood)
 
         res <- smoothLDS(A=A, mu=mu, V=V, P=P)
