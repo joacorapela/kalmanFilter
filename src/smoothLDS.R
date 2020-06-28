@@ -6,7 +6,7 @@ smoothLDS <- function(A, mu, V, P) {
     VHatLag1 <- list()
 
     muHat[,nObs] <- mu[,nObs]
-    VHat[[nObs]] <-- V[[nObs]]
+    VHat[[nObs]] <- V[[nObs]]
     for(n in (nObs-1):1) {
         Jn <- t(solve(P[[n]], A%*%V[[n]]))
         muHat[,n] <- mu[,n] + Jn%*%(muHat[,n+1]-A%*%mu[,n])
