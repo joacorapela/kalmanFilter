@@ -1,6 +1,6 @@
 require(MASS)
 
-simulateLDS <- function(nObs, A, Gamma, C, Sigma, mu0, V0) {
+simulateLDS <- function(nObs, A, Gamma, C, Sigma, mu0) {
     ssDim <- nrow(A)
     obsDim <- nrow(C)
     # state noise
@@ -8,10 +8,9 @@ simulateLDS <- function(nObs, A, Gamma, C, Sigma, mu0, V0) {
     # measurement noise
     v <- t(mvrnorm(n=nObs, mu=matrix(0, nrow=obsDim, ncol=1), Sigma=Sigma))
     # initial state noise
-    u <- mvrnorm(n=1, mu=rep(0, times=ssDim), Sigma=V0)
     z <- matrix(NaN, nrow=ssDim, ncol=nObs)
     x <- matrix(NaN, nrow=obsDim, ncol=nObs)
-    z[,1] <- mu0+u
+    z[,1] <- mu0
     for(n in 2:nObs) {
         z[,n] <- A%*%z[,n-1]+w[,n]
     }
