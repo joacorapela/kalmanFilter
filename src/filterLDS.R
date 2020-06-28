@@ -1,4 +1,5 @@
 filterLDS <- function(x, A, Gamma, C, Sigma, mu0, V0) {
+    # From Bishop 2006, Section 13.3.1
     nObs <- ncol(x)
     P <- list()
     K <- list()
@@ -28,10 +29,9 @@ filterLDS <- function(x, A, Gamma, C, Sigma, mu0, V0) {
 
         mean_cn <- C%*%A%*%mu[,n-1]
         sigma_cn <- C%*%P[[n-1]]%*%t(C)+Sigma
-        # sigmaCn <- makeSymmetricMatrix(m=sigmaCn)
+        sigma_cn <- (sigma_cn+t(sigma_cn))/2
         c[n] <- dmvnorm(x=x[,n], mean=mean_cn, sigma=sigma_cn)
     }
-show(paste("Eigv V[[N]]=", eigen(V[[nObs]])$values))
     answer <- list(P=P, K=K, mu=mu, V=V, c=c)
     return(answer)
 }
