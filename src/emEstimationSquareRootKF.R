@@ -1,9 +1,31 @@
 
-emEstimationSquareRootKF <- function(zs, A0, SRSigmaW0, C0, SRSigmaV0, B0, D0, xHat00, SRSigmaX00, nIter=Inf, tol=-Inf, varsToEstimate=list(initialStateMean=TRUE, initialStateCovariance=TRUE, transitionMatrix=TRUE, transitionCovariance=TRUE, observationMatrix=TRUE, observationCovariance=TRUE), logMsgPattern="loglik(iter=%%04d)=%%.4f") {
+emEstimationSquareRootKF <- function(zs, A0, SRSigmaW0, C0, SRSigmaV0, B0, D0, x00, initialStateType, SRSigmaX00, maxIter=Inf, tol=-Inf, varsToEstimate=list(initialStateMean=TRUE, initialStateCovariance=TRUE, transitionMatrix=TRUE, transitionCovariance=TRUE, observationMatrix=TRUE, observationCovariance=TRUE), covsConstraints=list(SigmaX0="unconstrained", SigmaW="unconstrained", SigmaV="unconstrained"), logMsgPattern="loglik(iter=%04d)=%.4f") {
 
-    if(!is.finite(nIter) && !is.finite(tol)) {
-        stop("nIter and tol cannot be both infinite")
+    if(!is.finite(maxIter) && !is.finite(tol)) {
+        stop("maxIter and tol cannot be both infinite")
     }
+    if(covsConstraints$SigmaX0=="diagonal") {
+        nonDiagElems <- SRSigmaX00[col(SRSigmaX00)!=row(SRSigmaX00)]
+        isDiag <- sum(nonDiagElems)==0
+        if(!isDiag) {
+            stop("SRSigmaX00 should be diagonal according to constraint")
+        }
+    }
+    if(covsConstraints$SigmaW=="diagonal") {
+        nonDiagElems <- SRSigmaW0[col(SRSigmaW0)!=row(SRSigmaW0)]
+        isDiag <- sum(nonDiagElems)==0
+        if(!isDiag) {
+            stop("SRSigmaW0 should be diagonal according to constraint")
+        }
+    }
+    if(covsConstraints$SigmaV=="diagonal") {
+        nonDiagElems <- SRSigmaV0[col(SRSigmaV0)!=row(SRSigmaV0)]
+        isDiag <- sum(nonDiagElems)==0
+        if(!isDiag) {
+            stop("SRSigmaV0 should be diagonal according to constraint")
+        }
+    }
+    start <- list(A=A0, SRSigmaW=SRSigmaW0, C=C0, SRSigmaV=SRSigmaV0, B=B0, D=D0, x0=x00, SRSigmaX0=SRSigmaX00)
     A <- A0
     SRSigmaW <- SRSigmaW0
     Gamma <- SRSigmaW%*%t(SRSigmaW)
@@ -12,7 +34,7 @@ emEstimationSquareRootKF <- function(zs, A0, SRSigmaW0, C0, SRSigmaV0, B0, D0, x
     Sigma <- SRSigmaV%*%t(SRSigmaV)
     B <- B0
     D <- D0
-    xHat0 <- xHat00
+    x0 <- x00
     SRSigmaX0 <- SRSigmaX00
     V0 <- SRSigmaX0%*%t(SRSigmaX0)
     us <- matrix(0, nrow=1, ncol=ncol(zs))
@@ -22,11 +44,11 @@ emEstimationSquareRootKF <- function(zs, A0, SRSigmaW0, C0, SRSigmaV0, B0, D0, x
     logLikelihood <- -Inf
     logLikelihoodIncrease <- Inf
     iter <- 0
-    while(iter<=nIter && tol<abs(logLikelihoodIncrease)) {
+    while(iter<=maxIter && tol<abs(logLikelihoodIncrease)) {
         # start E-step
-        res <- squareRootKF(A=A, B=B, C=C, D=D, xHat0=xHat0, SRSigmaX0=SRSigmaX0, SRSigmaW=SRSigmaW, SRSigmaV=SRSigmaV, us=us, zs=zs)
+        res <- squareRootKF(A=A, B=B, C=C, D=D, x0=x00, initialStateType=initialStateType, SRSigmaX0=SRSigmaX0, SRSigmaW=SRSigmaW, SRSigmaV=SRSigmaV, us=us, zs=zs)
         P <- res$SigmaX[2:length(res$SigmaX)]
-        mu <- res$xHat
+        mu <- res$x
         V <- res$SigmaXHat
         c <- res$c
 
@@ -45,7 +67,7 @@ emEstimationSquareRootKF <- function(zs, A0, SRSigmaW0, C0, SRSigmaV0, B0, D0, x
         # end E-step
 
         # computer correlation matrices
-        if(varsToEstimate$transitionMatrix || 
+        if(varsToEstimate$transitionMatrix ||
            varsToEstimate$transitionCovariance ||
            varsToEstimate$observationMatrix ||
            varsToEstimate$observationCovariance) {
@@ -55,7 +77,7 @@ emEstimationSquareRootKF <- function(zs, A0, SRSigmaW0, C0, SRSigmaV0, B0, D0, x
             }
         }
         CHatLag1 <- list()
-        if(varsToEstimate$transitionMatrix || 
+        if(varsToEstimate$transitionMatrix ||
            varsToEstimate$transitionCovariance) {
             for(n in 1:(N-1)) {
                 CHatLag1[[n]] <- VHatLag1[[n]] + muHat[,n+1]%*%t(muHat[,n])
@@ -65,11 +87,19 @@ emEstimationSquareRootKF <- function(zs, A0, SRSigmaW0, C0, SRSigmaV0, B0, D0, x
 
         # start M-step
         if(varsToEstimate$initialStateMean) {
-            xHat0 <- muHat[,1] # (13.110)
+            x0 <- muHat[,1] # (13.110)
         }
         if(varsToEstimate$initialStateCovariance) {
             V0 <- VHat[[1]] # (13.111)
-            SRSigmaX0 <- chol(x=V0)
+            if(covsConstraints$SigmaX0=="unconstrained") {
+                SRSigmaX0 <- chol(x=V0)
+            } else {
+                if(covsConstraints$SigmaX0=="diagonal") {
+                    SRSigmaX0 <- diag(sqrt(diag(V0)), nrow=nrow(V0)) # using the nrow argument to diag in case dim(V0)==c(1,1)
+                } else {
+                    stop(sprintf("Invalid covariance constraint %s for SigmaX0", covsConstraints$SigmaX0))
+                }
+            }
         }
 
         # compute A
@@ -87,7 +117,15 @@ emEstimationSquareRootKF <- function(zs, A0, SRSigmaW0, C0, SRSigmaV0, B0, D0, x
                 sum <- sum+CHat[[n]]-A%*%t(CHatLag1[[n-1]])-CHatLag1[[n-1]]%*%t(A)+A%*%CHat[[n-1]]%*%t(A)
             }
             Gamma <- sum/(N-1)
-            SRSigmaW <- chol(x=Gamma)
+            if(covsConstraints$SigmaW=="unconstrained") {
+                SRSigmaW <- chol(x=Gamma)
+            } else {
+                if(covsConstraints$SigmaW=="diagonal") {
+                    SRSigmaW <- diag(sqrt(diag(Gamma)), nrow=nrow(Gamma))
+                } else {
+                    stop(sprintf("Invalid covariance constraint %s for SigmaW", covsConstraints$SigmaW))
+                }
+            }
         }
         #
 
@@ -113,7 +151,15 @@ emEstimationSquareRootKF <- function(zs, A0, SRSigmaW0, C0, SRSigmaV0, B0, D0, x
                 sum <- sum + zs[,n]%*%t(zs[,n])-C%*%muHat[,n]%*%t(zs[,n])-zs[,n]%*%t(muHat[,n])%*%t(C)+C%*%CHat[[n]]%*%t(C)
             }
             Sigma <- sum/N
-            SRSigmaV <- chol(x=Sigma)
+            if(covsConstraints$SigmaV=="unconstrained") {
+                SRSigmaV <- chol(x=Sigma)
+            } else {
+                if(covsConstraints$SigmaV=="diagonal") {
+                    SRSigmaV <- diag(sqrt(diag(Sigma)), nrow=nrow(Sigma))
+                } else {
+                    stop(sprintf("Invalid covariance constraint %s for SigmaV", covsConstraints$SigmaV))
+                }
+            }
         }
         #
 
@@ -121,6 +167,6 @@ emEstimationSquareRootKF <- function(zs, A0, SRSigmaW0, C0, SRSigmaV0, B0, D0, x
         iter <- iter + 1
     }
     show(sprintf("Finished in %d iter with a log likelihood increase of %f", iter, logLikelihoodIncrease))
-    answer <- list(A=A, Gamma=Gamma, C=C, Sigma=Sigma, xHat0=xHat0, V0=V0, logLikelihoods=logLikelihoods)
+    answer <- list(A=A, Gamma=Gamma, C=C, Sigma=Sigma, x0=x0, V0=V0, logLikelihoods=logLikelihoods, start=start)
     return(answer)
 }
