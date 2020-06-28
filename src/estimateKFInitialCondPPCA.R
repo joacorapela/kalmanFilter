@@ -1,3 +1,6 @@
+require(pcaMethods)
+require(MASS)
+
 estimateKFInitialCondPPCA <- function(z, nFactors) {
     # res <- factanal(~z, factors=nFactors, rotation="varimax", na.action=na.exclude)
     res <- pca(z, method="ppca", nPcs=nFactors)
