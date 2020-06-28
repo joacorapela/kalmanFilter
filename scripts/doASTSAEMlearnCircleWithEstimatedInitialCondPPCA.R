@@ -1,5 +1,6 @@
 
 require(ramcmc)
+require(astsa)
 require(plotly)
 require(mvtnorm)
 require(gridExtra)
@@ -10,15 +11,15 @@ source("../src/estimateKFInitialCondPPCA.R")
 
 processAll <- function() {
     nFactors <- 2
-    maxIter <- 1000
+    maxIter <- 30000
     tol <- 1e-8
     simulationFilename <- "results/simulationCircle.RData"
     figFilename <- "figures/astsaLearningCircle.png"
 
     simRes <- get(load(simulationFilename))
     zs <- simRes$x
-    zsForFA <- t(as.matrix(zs))
-    initialConds <- estimateKFInitialCondPPCA(z=zsForFA, nFactors=nFactors)
+    zsForPPCA <- t(as.matrix(zs))
+    initialConds <- estimateKFInitialCondPPCA(z=zsForPPCA, nFactors=nFactors)
 
     A <- simRes$A
     C <- simRes$C
@@ -47,7 +48,6 @@ processAll <- function() {
     V00 <- V0
     SRSigmaX00 <- chol(x=V00)
 
-    browser()
     emRes = EM0(num=ncol(zs), y=t(zs), A=C, mu0=xHat00, Sigma0=V00, Phi=A0, cQ=SRSigmaW0, cR=SRSigmaV0, max.iter=maxIter, tol=tol)
 
     df <- data.frame(x=1:length(emRes$like), 
