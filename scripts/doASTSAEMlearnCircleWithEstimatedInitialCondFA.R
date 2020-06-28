@@ -1,24 +1,27 @@
 
+require(astsa)
+require(MASS)
 require(ramcmc)
 require(plotly)
 require(mvtnorm)
 require(gridExtra)
+require(reshape2)
 source("../src/squareRootKF.R")
 source("../src/smoothLDS.R")
 source("../src/estimateKFInitialCondFA.R")
-# source("makeSymmetricMatrices.R")
+source("../src/plotTrueInitialAndEstimatedMatrices.R")
+source("../src/plotTrueInitialAndEstimatedVectors.R")
 
 processAll <- function() {
     nFactors <- 2
-    maxIter <- 1000
+    maxIter <- 100
     tol <- 1e-8
     simulationFilename <- "results/simulationCircle.RData"
-    figFilename <- "figures/astsaLearningCircle.png"
 
     simRes <- get(load(simulationFilename))
     zs <- simRes$x
     zsForFA <- t(as.matrix(zs))
-    initialConds <- estimateKFInitialCondFA(z=zsForFA, nFactors=nFactors, rotation="none")
+    initialConds <- estimateKFInitialCondFA(z=zsForFA, nFactors=nFactors)
 
     A <- simRes$A
     C <- simRes$C
@@ -35,13 +38,13 @@ processAll <- function() {
 
     A0 <- initialConds$A
     # A0 <- A
-    Gamma0 <- initialConds$Gamma
+    Gamma0 <- 1e-3*diag(rep(1, ncol(A0)))
     SRSigmaW0 <- chol(x=Gamma0)
     C0 <- initialConds$C
     # C0 <- C
     B0 <- B
     D0 <- D
-    Sigma0 <- initialConds$Sigma
+    Sigma0 <- diag(initialConds$sigmaDiag)
     SRSigmaV0 <- chol(x=Sigma0)
     xHat00 <- xHat0
     V00 <- V0
@@ -51,11 +54,33 @@ processAll <- function() {
 
     df <- data.frame(x=1:length(emRes$like), 
                      y=emRes$like)
-    p1 <- ggplot(df, aes(x=x, y=y))
-    p1 <- p1 + geom_line()
-    p1 <- p1 + geom_point()
-    p1 <- p1 + xlab("Time")
-    p1 <- p1 + ylab("Log Likelihood")
+    p <- ggplot(df, aes(x=x, y=y))
+    p <- p + geom_line()
+    p <- p + geom_point()
+    p <- p + xlab("Time")
+    p <- p + ylab("Log Likelihood")
+    p <- ggplotly(p)
+    llFigFilename <- "figures//circleASTSA_LogLik.html"
+    htmlwidgets::saveWidget(as_widget(p), file.path(normalizePath(dirname(llFigFilename)), basename(llFigFilename)))
+    print(p)
+
+    AFigFilename <- "figures//circleASTSA_A.html"
+    plotTrueInitialAndEstimatedMatrices(trueM=A, initialM=A0, estimatedM=emRes$Phi, title="A", figFilename=AFigFilename)
+
+    CFigFilename <- "figures//circleASTSA_C.html"
+    plotTrueInitialAndEstimatedMatrices(trueM=C, initialM=C0, title="C", figFilename=CFigFilename)
+
+    GammaFigFilename <- "figures//circleASTSA_Gamma.html"
+    plotTrueInitialAndEstimatedMatrices(trueM=Gamma, initialM=Gamma0, estimatedM=emRes$Q, title="Gamma", figFilename=GammaFigFilename)
+
+    SigmaFigFilename <- "figures//circleASTSA_Sigma.html"
+    plotTrueInitialAndEstimatedMatrices(trueM=Sigma, initialM=Sigma0, estimatedM=emRes$R, title="Sigma", figFilename=SigmaFigFilename)
+
+    V0FigFilename <- "figures//circleASTSA_V0.html"
+    plotTrueInitialAndEstimatedMatrices(trueM=V0, initialM=V00, estimatedM=emRes$Sigma0, title="V0", figFilename=V0FigFilename)
+
+    xHat0FigFilename <- "figures//circleASTSA_XHat0.html"
+    plotTrueInitialAndEstimatedVectors(trueV=xHat0, initialV=xHat00, estimatedV=emRes$mu0, title="xHat0", figFilename=xHat0FigFilename)
 
     fRes <- squareRootKF(A=emRes$Phi, B=B, C=C0, D=D, xHat0=emRes$mu0, SRSigmaX0=chol(x=emRes$Sigma0), SRSigmaW=chol(emRes$Q), SRSigmaV=chol(emRes$R), us=us, zs=zs)
     sRes <- smoothLDS(A=emRes$Phi, mu=fRes$xHat, V=fRes$SigmaXHat, P=fRes$SigmaX[2:length(fRes$SigmaX)])
@@ -87,27 +112,20 @@ processAll <- function() {
                                                length(sRes0$muHat[i,])))
         data <- rbind(data, dataBlock)
     }
-    p2 <- ggplot(data, aes(x=sample, y=latent, 
+    p <- ggplot(data, aes(x=sample, y=latent, 
                            color=factor(latentID),
                            linetype=factor(latentType)))
-    p2 <- p2 + geom_line()
-    p2 <- p2 + geom_hline(yintercept=0)
-    p2 <- p2 + geom_vline(xintercept=0)
-    p2 <- p2 + ylab("Latent Value")
-    p2 <- p2 + xlab("Time")
-    p2 <- p2 + theme(legend.title = element_blank()) 
+    p <- p + geom_line()
+    p <- p + geom_hline(yintercept=0)
+    p <- p + geom_vline(xintercept=0)
+    p <- p + ylab("Latent Value")
+    p <- p + xlab("Time")
+    p <- p + theme(legend.title = element_blank()) 
+    p <- ggplotly(p)
+    latentsFigFilename <- "figures//circleASTSA_Latents.html"
+    htmlwidgets::saveWidget(as_widget(p), file.path(normalizePath(dirname(latentsFigFilename)), basename(latentsFigFilename)))
+    print(p)
 
-    # browser()
-    # print(p1)
-    # browser()
-    # print(p2)
-    # browser()
-    # grid.arrange(p1, p2, ncol = 1)
-    # p <- arrangeGrob(p1, p2, ncol=1)
-    # ggsave(filename=figFilename, plot=p)
-    p2 <- ggplotly(p2)
-    print(p2)
-    # plot(unlist(res$logLikelihoods), type="b")
     browser()
 }
 
