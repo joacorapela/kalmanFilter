@@ -83,15 +83,13 @@ emEstimationKF <- function(x, A0, Gamma0, C0, Sigma0, mu00, V00, nIter, varsToEs
         #
 
         # compute C
+        stop("Need to test if this part of the code works fine.")
         if(varsToEstimate$observationMatrix) {
             rhs <- x[,1]%*%t(muHat[,1])
             for(n in 2:N) {
                 rhs <- rhs + x[,n]%*%t(muHat[,n])
             }
-            if(!varsToEstimate$transitionMatrix) {
-                lhs <- Reduce("+", CHat[1:(length(CHat)-1)])
-            }
-            lhs <- lhs+CHat[[length(CHat)]]
+            lhs <- Reduce("+", CHat)
             C <- t(solve(a=lhs, b=t(rhs)))
         } else {
             C <- NA
