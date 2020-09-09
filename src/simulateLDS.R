@@ -1,20 +1,20 @@
 require(MASS)
 
-simulateLDS <- function(nObs, A, Gamma, C, Sigma, mu0) {
-    ssDim <- nrow(A)
-    obsDim <- nrow(C)
+simulateLDS <- function(nObs, B, Q, Z, R, x00, V00) {
+    ssDim <- nrow(B)
+    obsDim <- nrow(Z)
     # state noise
-    w <- t(mvrnorm(n=nObs, mu=matrix(0, nrow=ssDim, ncol=1), Sigma=Gamma))
+    w <- t(mvrnorm(n=nObs, mu=matrix(0, nrow=ssDim, ncol=1), Sigma=Q))
     # measurement noise
-    v <- t(mvrnorm(n=nObs, mu=matrix(0, nrow=obsDim, ncol=1), Sigma=Sigma))
+    v <- t(mvrnorm(n=nObs, mu=matrix(0, nrow=obsDim, ncol=1), Sigma=R))
     # initial state noise
-    z <- matrix(NaN, nrow=ssDim, ncol=nObs)
-    x <- matrix(NaN, nrow=obsDim, ncol=nObs)
-    z[,1] <- mu0
+    x <- matrix(NaN, nrow=ssDim, ncol=nObs)
+    y <- matrix(NaN, nrow=obsDim, ncol=nObs)
+    x[,1] <- t(mvrnorm(n=1, mu=x00, Sigma=V00))
     for(n in 2:nObs) {
-        z[,n] <- A%*%z[,n-1]+w[,n]
+        x[,n] <- B%*%x[,n-1]+w[,n]
     }
-    x <- C%*%z+v
-    answer <- list(z=z, x=x)
+    y <- Z%*%x+v
+    answer <- list(x=x, y=y)
     return(answer)
 }
