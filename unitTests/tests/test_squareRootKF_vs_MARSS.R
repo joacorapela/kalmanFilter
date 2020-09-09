@@ -10,8 +10,8 @@ source("~/dev/research/programs/src/R/math/l2Norm.R")
 
 processAll <- function() {
     tol <- 1e-5
-    noiseSD <- 1e-4
-    initialStateType <- "init01"
+    noiseSD <- 1e-3
+    stateType0 <- "init10"
     tinitx <- 1
     V0SD <- 1e2
     simulationFilename <- "../../scripts/results/simulationCircle.RData"
@@ -22,15 +22,12 @@ processAll <- function() {
     nObs <- ncol(simRes$x)
 
     obs <- simRes$x
-    us <- matrix(0, nrow=1, ncol=nObs)
     x0 <- simRes$mu0 + rnorm(n=nLatents, sd=noiseSD)
-    V0 <- simRes$V0 + matrix(rnorm(n=nLatents^2, sd=noiseSD), nrow=nLatents)
+    V0 <- simRes$V0 + matrix(rnorm(n=nLatents^2, sd=noiseSD)^2, nrow=nLatents)
     A0 <- simRes$A + matrix(rnorm(n=nLatents^2, sd=noiseSD), ncol=nLatents)
-    Gamma0 <- simRes$Gamma + diag(rnorm(n=nLatents, sd=noiseSD))
+    Gamma0 <- simRes$Gamma + diag(rnorm(n=nLatents, sd=noiseSD)^2)
     C0 <- simRes$C + matrix(rnorm(n=nNeurons*nLatents, sd=noiseSD), ncol=nLatents)
-    Sigma0 <- simRes$Sigma + diag(rnorm(n=nNeurons, sd=noiseSD))
-    B0 <- matrix(0, nrow=nLatents, ncol=1)
-    D0 <- matrix(0, nrow=nNeurons, ncol=1)
+    Sigma0 <- simRes$Sigma + diag(rnorm(n=nNeurons, sd=noiseSD)^2)
     x0 <- rep(0, times=nLatents)
     V0 <- V0SD^2*diag(rep(1, times=nLatents))
 
@@ -74,6 +71,16 @@ processAll <- function() {
         d1 <- "zero"
     }
 
+    if(stateType0=="init00") {
+        tinitx = 0
+    } else {
+        if(stateType0=="init10") {
+            tinitx = 1
+        } else {
+            stop(sprintf("Invalid stateType0=%s", stateType0))
+        }
+    }
+
     model.list <- list(B=B1, U=U1, C=C1, c=c1, Q=Q1, Z=Z1, A=A1, D=D1, d=d1, R=R1, x0=pi1, V0=V01, tinitx=tinitx)
 
     B0_marss <- matrix(as.vector(A0), ncol=1)
@@ -90,10 +97,10 @@ processAll <- function() {
     fRes_MARSS <- kfList$xtt
     # end MARSS
 
-    fRes_squareRootKF <- squareRootKF(A=A0, B=B0, C=C0, D=D0, x0=x0, initialStateType=initialStateType, SRSigmaX0=chol(x=V0), SRSigmaW=chol(x=Gamma0), SRSigmaV=chol(x=Sigma0), us=us, zs=obs)
+    fRes_squareRootKF <- squareRootKF(B=A0, Z=C0, x0=x0, srV0=chol(x=V0), stateType0=stateType0, srQ=chol(x=Gamma0), srR=chol(x=Sigma0), ys=obs)
 
     for(n in 1:nObs) {
-        diff <- fRes_squareRootKF$x[,n]-fRes_MARSS[,n]
+        diff <- fRes_squareRootKF$xnn[, 1, n]-fRes_MARSS[,n]
         error <- l2Norm(diff)
         if(error>tol) {
             stop(sprintf("Error comparing state[%d], error=%f>tol=%f", n, error, tol))
