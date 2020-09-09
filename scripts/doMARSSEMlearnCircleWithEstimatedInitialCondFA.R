@@ -4,7 +4,7 @@ require(reshape2)
 require(MARSS)
 require(plotly)
 source("../src/squareRootKF.R")
-source("../src/smoothLDS.R")
+source("../src/smoothLDS_B.R")
 source("../src/estimateKFInitialCondFA.R")
 source("../src/plotTrueInitialAndEstimatedMatrices.R")
 source("../src/plotTrueInitialAndEstimatedVectors.R")
@@ -22,11 +22,13 @@ processAll <- function() {
     # begin create model
     B1  <- matrix(list("b11", "b21", "b12", "b22"), nrow=2)
     U1  <- "zero"
-    Q1  <- "diagonal and equal"
+    # Q1  <- "diagonal and equal"
+    Q1  <- "unconstrained"
     # Z1  <- factor(c(1,1,1,1,2,2,2,2))
     Z1  <- matrix(list("z11", "z21", "z31", "z41", "z51", "z61", "z71", "z81", "z12", "z22", "z32", "z42", "z52", "z62", "z72", "z82"), nrow=8)
-    A1  <- "unequal"
-    R1  <- "diagonal and unequal"
+    A1  <- "zero"
+    # R1  <- "diagonal and unequal"
+    R1  <- "unconstrained"
     pi1 <- "unequal"
     V01 <- "diagonal and equal"
 
@@ -39,14 +41,19 @@ processAll <- function() {
 
     B0 <- matrix(as.vector(initialConds$A), ncol=1)
     Z0 <- matrix(as.vector(initialConds$C), ncol=1)
-    R0 <- matrix(initialConds$sigmaDiag, ncol=1)
+    R0 <- diag(initialConds$sigmaDiag)
+    R0lowerTri <- matrix(R0[lower.tri(R0, diag=TRUE)], ncol=1)
     control <- list(maxit=maxIter, trace=1)
 
-    inits <- list(B=B0, Z=Z0, R=R0)
+    inits <- list(B=B0, Z=Z0, R=R0lowerTri)
+    # inits <- list(B=B0, Z=Z0)
     # end set initial conditions
 
     kem <- MARSS(zs, model=model.list, inits=inits, control=control, silent=2)
 
+    if(kem$convergence>1) {
+        stop(sprintf("MARSS did not converged (convergence=%d)", kem$convergence))
+    }
     logLikFigFilename <- "figures/circleMARSS_logLik.html"
     logLik <- kem$iter.record$logLik
     df <- data.frame(x=1:length(logLik), y=logLik)
@@ -75,33 +82,13 @@ processAll <- function() {
     plotTrueInitialAndEstimatedVectors(true=simRes$V0[1,1], estimated=coef(kem)$V0, title="V0 Variance", figFilename=V0FigFilename)
 
     kfRes <- MARSSkf(kem)
-
-    # start run KF and KS using with initial conditions using my code
-    A0 <- initialConds$A
-    Gamma0 <- diag(rep(coef(kem)$Q, dimLat))
-    SRSigmaW0 <- chol(x=Gamma0)
-    C0 <- as(initialConds$C, "matrix")
-    B0SRKF <- matrix(0, nrow=nrow(simRes$A), ncol=1)
-    D0 <- matrix(0, nrow=nrow(simRes$C), ncol=1)
-    Sigma0 <- diag(initialConds$sigmaDiag)
-    SRSigmaV0 <- chol(x=Sigma0)
-    x00 <- coef(kem)$x0
-    initialStepType <- "init01"
-    V00 <- diag(coef(kem)$V0[1,1], ncol=dimLat, nrow=dimLat)
-    SRSigmaX00 <- chol(x=V00)
-    us <- matrix(0, nrow=1, ncol=ncol(zs))
-
-    fRes0 <- squareRootKF(A=A0, B=B0SRKF, C=C0, D=D0, x0=x00, initialStateType="init01", SRSigmaX0=SRSigmaX00, SRSigmaW=SRSigmaW0, SRSigmaV=SRSigmaV0, us=us, zs=zs)
-    sRes0 <- smoothLDS(A=A0, mu=fRes0$x, V=fRes0$SigmaXHat, P=fRes0$SigmaX[2:length(fRes0$SigmaX)])
-    # end run KF and KS using with initial conditions using my code
+    kem0 <- kem
+    kem0$par <- kem0$start
+    kfRes0 <- MARSSkf(kem0)
 
     data <- data.frame()
     for(i in 1:nrow(simRes$z)) {
-        dataBlock <- data.frame(sample=1:length(simRes$z[i,]),
-                                latent=simRes$z[i,],
-                                latentID=rep(i, length(simRes$z[i,])),
-                                latentType=rep("true",
-                                               length(simRes$z[i,])))
+        dataBlock <- data.frame(sample=1:length(simRes$z[i,]), latent=simRes$z[i,], latentID=rep(i, length(simRes$z[i,])), latentType=rep("true", length(simRes$z[i,])))
         data <- rbind(data, dataBlock)
     }
     for(i in 1:nrow(kfRes$xtT)) {
@@ -112,12 +99,12 @@ processAll <- function() {
                                                length(kfRes$xtT[i,])))
         data <- rbind(data, dataBlock)
     }
-    for(i in 1:nrow(sRes0$muHat)) {
-        dataBlock <- data.frame(sample=1:length(sRes0$muHat[i,]),
-                                latent=sRes0$muHat[i,],
-                                latentID=rep(i, length(sRes0$muHat[i,])),
+    for(i in 1:nrow(kfRes0$xtT)) {
+        dataBlock <- data.frame(sample=1:length(kfRes0$xtT[i,]),
+                                latent=kfRes0$xtT[i,],
+                                latentID=rep(i, length(kfRes0$xtT[i,])),
                                 latentType=rep("initial",
-                                               length(sRes0$muHat[i,])))
+                                               length(kfRes0$xtT[i,])))
         data <- rbind(data, dataBlock)
     }
     p <- ggplot(data, aes(x=sample, y=latent,
