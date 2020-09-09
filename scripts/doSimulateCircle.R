@@ -7,13 +7,16 @@ source("../src/simulateLDS.R")
 processAll <- function() {
     measurementNoiseSD <- 5*1e-2
     stateNoiseSD <- 1e-3
-    dObs <- 2*4
-    nObs <- 200
+    dObs <- 2*1
+    nObs <- 2000
     latentsVarPrior <- 10
     xlab <- "x"
     ylab <- "y"
-    simulationFilename <- "results/simulationCircle.RData"
-    simulationFigFilename <- "figures/srFilterResSimulationCircle.png"
+    simulationFilenamePattern <- "results/simulationCircleDObs%02d.RData"
+    simulationFigFilenamePattern <- "figures/simulationCircleDObs%02d.png"
+
+    simulationFilename <- sprintf(simulationFilenamePattern, dObs)
+    simulationFigFilename <- sprintf(simulationFigFilenamePattern, dObs)
 
     # From Fig 4.5b of http://www.staff.city.ac.uk/o.castro-alvaredo/dynamical/dynamicalsystems.pdf
 
@@ -36,11 +39,10 @@ processAll <- function() {
     Sigma <- diag(x=dObs)*measurementNoiseSD
 
     nLatents <- nrow(A)
-    mu0 <- rep(0, times=nrow(A))
-    V0 <- diag(x=rep(latentsVarPrior, times=nrow(A)))
+    mu0 <- c(5, 5)
 
-    res <- simulateLDS(nObs=nObs, A=A, Gamma=Gamma, C=C, Sigma=Sigma, mu0=mu0, V0=V0)
-    simulationRes <- c(res, list(A=A, Gamma=Gamma, C=C, Sigma=Sigma, mu0=mu0, V0=V0))
+    res <- simulateLDS(nObs=nObs, A=A, Gamma=Gamma, C=C, Sigma=Sigma, mu0=mu0)
+    simulationRes <- c(res, list(A=A, Gamma=Gamma, C=C, Sigma=Sigma, mu0=mu0))
     save(simulationRes, file=simulationFilename)
 
     df <- data.frame(t(cbind(res$x[c(1, dObs/2+1),], res$z)))
