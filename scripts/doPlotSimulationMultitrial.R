@@ -1,17 +1,17 @@
 
 require(plotly)
-require(ggplot2)
+require(htmlwigets)
 
 processAll <- function() {
     simResNumber <- 78598469
-    trialToPlot <- 1
+    trialToPlot <- 3
     simFilenamePattern <- "results/%08d_simulation.RData"
     simFigFilenamePattern <- "figures/%08d_simulation_trial%02d.%s"
 
     simFilename <- sprintf(simFilenamePattern, simResNumber)
     simRes <- get(load(file=simFilename))
 
-    nObs <- ncol(simRes$x)
+    nObs <- dim(simRes$x)[3]
     title <- sprintf("Trial %d", trialToPlot)
     hoverTextLatents <- sprintf("sample %d, x %.02f, y %.02f", 1:nObs, simRes$x[trialToPlot,1,], simRes$x[trialToPlot,2,])
     hoverTextObservations <- sprintf("sample %d, x %.02f, y %.02f", 1:nObs, simRes$y[trialToPlot,1,], simRes$y[trialToPlot,2,])
