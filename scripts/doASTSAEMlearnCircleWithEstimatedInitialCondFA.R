@@ -7,7 +7,7 @@ require(mvtnorm)
 require(gridExtra)
 require(reshape2)
 source("../src/squareRootKF.R")
-source("../src/smoothLDS.R")
+source("../src/smoothLDS_R.R")
 source("../src/estimateKFInitialCondFA.R")
 source("../src/plotTrueInitialAndEstimatedMatrices.R")
 source("../src/plotTrueInitialAndEstimatedVectors.R")
@@ -50,7 +50,8 @@ processAll <- function() {
     V00 <- V0
     SRSigmaX00 <- chol(x=V00)
 
-    emRes = EM0(num=ncol(zs), y=t(zs), A=C, mu0=xHat00, Sigma0=V00, Phi=A0, cQ=SRSigmaW0, cR=SRSigmaV0, max.iter=maxIter, tol=tol)
+    # emRes <- EM0(num=ncol(zs), y=t(zs), A=C, mu0=xHat00, Sigma0=V00, Phi=A0, cQ=SRSigmaW0, cR=SRSigmaV0, max.iter=maxIter, tol=tol)
+    emRes <- EM0(num=ncol(zs), y=t(zs), A=C, mu0=xHat00, Sigma0=V0, Phi=A, cQ=SRSigmaW, cR=SRSigmaV, max.iter=maxIter, tol=tol)
 
     df <- data.frame(x=1:length(emRes$like), 
                      y=emRes$like)
@@ -63,6 +64,8 @@ processAll <- function() {
     llFigFilename <- "figures//circleASTSA_LogLik.html"
     htmlwidgets::saveWidget(as_widget(p), file.path(normalizePath(dirname(llFigFilename)), basename(llFigFilename)))
     print(p)
+
+    browser()
 
     AFigFilename <- "figures//circleASTSA_A.html"
     plotTrueInitialAndEstimatedMatrices(trueM=A, initialM=A0, estimatedM=emRes$Phi, title="A", figFilename=AFigFilename)
