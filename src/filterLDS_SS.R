@@ -8,64 +8,44 @@ getNearestPD <- function(S) {
     return(answer)
 }
 
-filterLDS_SS <- function(B, Z, x0, V0, stateType0, Q, R, ys, checkSymmetry=FALSE, symmetryTol=1e-6, checkPD=FALSE, pdTol=1e-6) {
+filterLDS_SS <- function(ys, B, mu0, V0, Q, Z, R, checkSymmetry=FALSE, symmetryTol=1e-6, checkPD=FALSE, pdTol=1e-6) {
+    # N: number of observations
+    # M: dim state space
+    # P: dim observations
     M <- nrow(B)
     ys <- as.matrix(ys)
-    nObs <- ncol(ys)
-    N <- nrow(ys)
-    xnn1 <- array(NA, dim=c(M, 1, nObs))
-    Vnn1 <- array(NA, dim=c(M, M, nObs))
-    xnn <- array(NA, dim=c(M, 1, nObs))
-    Vnn <- array(NA, dim=c(M, M, nObs))
-    innov <- array(NA, dim=c(N, 1, nObs))
-    Sn <- array(NA, dim=c(N, N, nObs))
+    N <- ncol(ys)
+    P <- nrow(ys)
+    xnn1 <- array(NA, dim=c(M, 1, N))
+    Vnn1 <- array(NA, dim=c(M, M, N))
+    xnn <- array(NA, dim=c(M, 1, N))
+    Vnn <- array(NA, dim=c(M, M, N))
+    innov <- array(NA, dim=c(P, 1, N))
+    Sn <- array(NA, dim=c(P, P, N))
     logLike <- 0
     x00 <- as.matrix(x0, nrow=M, ncol=1)
     V00 = as.matrix(V0, nrow=M, ncol=M)
-
-    for(k in 1:nObs) {
-        # predicted state mean and covariance
-        if(k==1) {
-            if(stateType0=="init00") {
-                xnn1[,,k] <- B%*%x00
-                Vnn1[,,k] <- B%*%V00%*%t(B)+Q
-            } else {
-                if(stateType0=="init10") {
-                    xnn1[,,k] <- x00
-                    Vnn1[,,k] <- V0
-                } else {
-                    stop(sprintf("Invalid stateType0 value: %s", stateType0))
-                }
-            }
-        } else {
-            xnn1[,,k] <- B%*%xnn[,,k-1]
-            Vnn1[,,k] <- B%*%Vnn[,,k-1]%*%t(B)+Q
-        }
-        # innovation
-        innov[,,k] <- ys[,k]-Z%*%xnn1[,,k]
-        # innovation covariance
-        S <- Z%*%Vnn1[,,k]%*%t(Z)+R
-        S <- (t(S)+S)/2
-        Sn[,,k] <- S
-        Sinv <- solve(S)
-        # log likelihood
-        detS <- det(S)
-        if(detS<0) {
-            warning(sprintf("det(S)=%f<0", detS))
-            pdS <- getNearestPD(S)
-            detPDS <- det(pdS)
-            show(sprintf("det(pdS)=%f", detPDS))
-            # browser()
-            S <- pdS
-            detS <- detPDS
-        }
-        logLike <- logLike - log(detS) - t(innov[,,k])%*%Sinv%*%innov[,,k] #SS16 (6.60)
-        # Kalman gain
-        K <- Vnn1[,,k]%*%t(Z)%*%Sinv
-        # filtered mean
-        xnn[,,k] <- xnn1[,,k]+K%*%innov[,,k]
-        # filtered covariance
+    xnn1[,,1] <- B%*%mu0
+    Vnn1[,,1] <- B%*%V0%*%t(B)+Q
+    Stmp <- Z%*%Vnn1[,,1]%*%t(Z)+R
+    Sn[,,1] <- (Stmp+t(Stmp))/2
+    Sinv <- solve(Sn[,,1])
+    K <- Vnn1[,,1]%*%t(Z)%*%Sinv
+    innov[,,1] <- y[1,]-Z%*%xnn1[,,1]
+    xnn[,,1] <- xnn1[,,1]+K%*%innov[,,1]
+    Vnn[,,1] <- Vnn1[,,1]-K%*%Z%*%Vnn1[,,1]
+    logLike <- -N*P*log(2*pi)-log(det(Sn[,,1]))-t(innov[,,1])%*%Sinv%*%innov[,,1]
+    for(k in 2:N) {
+        xnn1[,,k] <- B%*%xnn[,,k-1]
+        Vnn1[,,k] <- B%*%Vnn[,,k-1]%*%t(B)+Q
+        Stmp <- Z%*%Vnn1[,,k]%*%t(Z)+R
+        Sn[,,k] <- (Stmp+t(Stmp))/2
+        Sinv <- solve(Sn[,,k])
+        K <- Vnn1[,,k]%*%t(Z)%*TSinv
+        innov[,,k] <- ys[k,]-Z%*%xnn1[,,k]
+        xnn[,,k] <- xnn1[,,]+K%*%innov[,,k]
         Vnn[,,k] <- Vnn1[,,k]-K%*%Z%*%Vnn1[,,k]
+        logLike <- logLike-log(det(Sn[,,k]))-t(innov[,,k])%*%Sinv%*%innov[,,k]
     }
     logLike <- 0.5*logLike
     answer <- list(xnn1=xnn1, Vnn1=Vnn1, xnn=xnn, Vnn=Vnn, innov=innov, KN=K, Sn=Sn, logLike=logLike)
