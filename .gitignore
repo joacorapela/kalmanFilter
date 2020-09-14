@@ -4,3 +4,7 @@
 shumwayAndStoffer11/*
 figures/
 scripts/results/*.RData
+scripts/data/*.ini
+scripts/results/*.ini
+fromSyncData
+toSyncData
