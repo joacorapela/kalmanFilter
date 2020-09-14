@@ -38,7 +38,7 @@ processAll <- function() {
     Q <- eval(parse(text=simConfig$state_variables$Q))
 
     # initial state mean
-    mu0 <- eval(parse(text=simConfig$initial_state_variables$mu0))
+    m0 <- eval(parse(text=simConfig$initial_state_variables$m0))
 
     # initial state covariance
     V0 <- eval(parse(text=simConfig$initial_state_variables$V0))
@@ -49,8 +49,8 @@ processAll <- function() {
     # measurements noise covariance
     R <- eval(parse(text=simConfig$measurements_variables$R))
 
-    res <- simulateLDS(N=N, B=B, Q=Q, mu0=mu0, V0=V0, Z=Z, R=R)
-    simRes <- c(res, list(B=B, Q=Q, mu0=mu0, V0=V0, Z=Z, R=R))
+    res <- simulateLDS(N=N, B=B, Q=Q, m0=m0, V0=V0, Z=Z, R=R)
+    simRes <- c(res, list(B=B, Q=Q, m0=m0, V0=V0, Z=Z, R=R))
     save(simRes, file=simFilename)
 
     hoverTextLatents <- sprintf("sample %d, x %.02f, y %.02f", 1:N, res$x[1,], res$x[2,])
@@ -64,9 +64,9 @@ processAll <- function() {
     fig <- fig %>% add_annotations(x=c(res$x[1,1], res$x[1,N]), y=c(res$x[2,1], res$x[2,N]), text=c("start", "end"))
     simPNGFilename <- sprintf(simFigFilenamePattern, simResNumber, "png")
     simHTMLFilename <- sprintf(simFigFilenamePattern, simResNumber, "html")
-    # orca(p=fig, file=simPNGFilename)
+    orca(p=fig, file=simPNGFilename)
     saveWidget(widget=fig, file=file.path(normalizePath(dirname(simHTMLFilename)),basename(simHTMLFilename)))
-    # print(fig)
+    print(fig)
 
     browser()
 }
