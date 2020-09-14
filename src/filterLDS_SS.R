@@ -1,5 +1,5 @@
 
-filterLDS_SS <- function(y, B, mu0, V0, Q, Z, R) {
+filterLDS_SS <- function(y, B, m0, V0, Q, Z, R) {
     # N: number of observations
     # M: dim state space
     # P: dim observations
@@ -14,11 +14,11 @@ filterLDS_SS <- function(y, B, mu0, V0, Q, Z, R) {
     innov <- array(NA, dim=c(P, 1, N))
     Sn <- array(NA, dim=c(P, P, N))
     logLike <- 0
-    mu0 <- as.matrix(mu0, nrow=M, ncol=1)
+    m0 <- as.matrix(m0, nrow=M, ncol=1)
     V0 <- as.matrix(V0, nrow=M, ncol=M)
 
     # k==1
-    xnn1[,,1] <- B%*%mu0
+    xnn1[,,1] <- B%*%m0
     Vnn1[,,1] <- B%*%V0%*%t(B)+Q
     Stmp <- Z%*%Vnn1[,,1]%*%t(Z)+R
     Sn[,,1] <- (Stmp+t(Stmp))/2
