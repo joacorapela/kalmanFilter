@@ -4,7 +4,7 @@ filterLDS_SS <- function(y, B, m0, V0, Q, Z, R) {
     # M: dim state space
     # P: dim observations
     M <- nrow(B)
-    y <- as.matrix(y)
+    # y <- as.matrix(y)
     N <- ncol(y)
     P <- nrow(y)
     xnn1 <- array(NA, dim=c(M, 1, N))
