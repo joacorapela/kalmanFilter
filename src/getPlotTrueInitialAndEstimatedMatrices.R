@@ -52,8 +52,6 @@ getPlotTrueInitialAndEstimatedMatrices <- function(true=NA, initial=NA, estimate
         }
     }
     fig <- fig %>% layout(title=title, xaxis=list(title=xlab, tickvals=1:nrow(allData)), yaxis=list(title=ylab))
-    print(fig)
-    browser()
     return(fig)
 }
 
