@@ -4,7 +4,7 @@ require(htmlwigets)
 
 processAll <- function() {
     simResNumber <- 78598469
-    trialToPlot <- 3
+    trialToPlot <- 8
     simFilenamePattern <- "results/%08d_simulation.RData"
     simFigFilenamePattern <- "figures/%08d_simulation_trial%02d.%s"
 
@@ -25,7 +25,7 @@ processAll <- function() {
     fig <- fig %>% layout(title=title)
     simPNGFilename <- sprintf(simFigFilenamePattern, simResNumber, trialToPlot, "png")
     simHTMLFilename <- sprintf(simFigFilenamePattern, simResNumber, trialToPlot, "html")
-    orca(p=fig, file=simPNGFilename)
+    # orca(p=fig, file=simPNGFilename)
     saveWidget(widget=fig, file=file.path(normalizePath(dirname(simHTMLFilename)),basename(simHTMLFilename)))
     print(fig)
 
