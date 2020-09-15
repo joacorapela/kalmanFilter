@@ -8,9 +8,9 @@ source("../src/estimateKFInitialCondFA.R")
 source("../src/estimateKFInitialCondPPCA.R")
 
 processAll <- function() {
+    estConfigNumber <- 1
     simResNumber <- 95498373
     simulationFilenamePattern <- "results/%s_simulation.RData"
-    estConfigNumber <- 0
 
     estResFilenamePattern <- "results/%08d_estimation.RData"
     estConfigFilenamePattern <- "data/%08d_estimation_metaData.ini"
@@ -38,9 +38,6 @@ processAll <- function() {
     tol <- as.double(estConfig$control_variables$tol)
     maxIter <- as.numeric(estConfig$control_variables$maxIter)
 
-    if(tolower(estConfig$initial_values$m0)!="simulated") {
-        m0 <- eval(parse(text=estConfig$initial_values$m0))
-    }
     V0 <- eval(parse(text=estConfig$initial_values$V0))
     M <- nrow(V0)
     Q0 <- eval(parse(text=estConfig$initial_values$Q0))
@@ -50,10 +47,17 @@ processAll <- function() {
     simRes <- get(load(simulationFilename))
     y <- simRes$y
     P <- nrow(y)
+    browser()
     if(tolower(estConfig$initial_values$m0)=="simulated") {
         m0 <- simRes$m0
     } else {
-        m0 <- eval(parse(text=estConfig$initial_values$m0))
+        if(tolower(estConfig$initial_values$m0)=="randomuniform") {
+            m0Min <- as.double(estConfig$initial_value$m0Min)
+            m0Max <- as.double(estConfig$initial_value$m0Max)
+            m0 <- runif(n=M, min=m0Min, max=m0Max)
+        } else {
+            m0 <- eval(parse(text=estConfig$initial_values$m0))
+        }
     }
 
     # initialConds <- estimateKFInitialCondFA(z=t(as.matrix(y)), nFactors=M)
@@ -67,6 +71,7 @@ processAll <- function() {
 
     metaData <- list()
     metaData[["simulation_info"]] <- list(simResNumber=simResNumber)
+    metaData[["estimation_config_info"]] <- list(estConfigNumber=estConfigNumber)
     write.ini(x=metaData, filepath=estResMetaDataFilename)
 
     browser()
