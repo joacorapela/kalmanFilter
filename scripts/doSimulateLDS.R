@@ -9,7 +9,8 @@ processAll <- function() {
     xlab <- "x"
     ylab <- "y"
     simConfigFilenamePattern <- "data/%08d_simulation_metaData.ini"
-    simFilenamePattern <- "results/%08d_simulation.RData"
+    simResFilenamePattern <- "results/%08d_simulation.RData"
+    simResMetaDataFilenamePattern <- "results/%08d_simulation.ini"
     simFigFilenamePattern <- "figures/%08d_simulation.%s"
 
     simConfigFilename <- sprintf(simConfigFilenamePattern, simConfigNumber)
@@ -18,11 +19,12 @@ processAll <- function() {
     exit <- FALSE
     while(!exit) {
         simResNumber <- sample(1e8, 1)
-        simFilename <- sprintf(simFilenamePattern, simResNumber)
+        simFilename <- sprintf(simResFilenamePattern, simResNumber)
         if(!file.exists(simFilename)) {
             exit <- TRUE
         }
     }
+    simResMetaDataFilename <- sprintf(simResMetaDataFilenamePattern, simResNumber)
     show(sprintf("Simulation results in: %s", simFilename))
 
     # sampling rate
@@ -52,6 +54,10 @@ processAll <- function() {
     res <- simulateLDS(N=N, B=B, Q=Q, m0=m0, V0=V0, Z=Z, R=R)
     simRes <- c(res, list(B=B, Q=Q, m0=m0, V0=V0, Z=Z, R=R))
     save(simRes, file=simFilename)
+
+    metaData <- list()
+    metaData[["simulation_info"]] <- list(simConfigNumber=simConfigNumber)
+    write.ini(x=metaData, filepath=simResMetaDataFilename)
 
     hoverTextLatents <- sprintf("sample %d, x %.02f, y %.02f", 1:N, res$x[1,], res$x[2,])
     hoverTextObservations <- sprintf("sample %d, x %.02f, y %.02f", 1:N, res$y[1,], res$y[2,])
