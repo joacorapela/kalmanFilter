@@ -8,8 +8,10 @@ source("../src/getPlotTrueInitialAndEstimatedVectors.R")
 
 processAll <- function() {
     obsToPlot <- 1
-    testSimResNumber <- -1 # use train simulation
-    estResNumber <- 99485472
+    testSimResNumber <- 09685977
+    # testSimResNumber <- -1 # use train simulation
+    # estResNumber <- 99485472
+    estResNumber <- 93973929
     simFilenamePattern <- "results/%08d_simulation.RData"
     estResFilenamePattern <- "results/%08d_estimation.RData"
     estConfigFilenamePattern <- "data/%08d_estimation_metaData.ini"
@@ -46,17 +48,17 @@ processAll <- function() {
         rgbValues <- col2rgb(cols[i])
         # observation
         fig <- fig%>%add_trace(x=1:ncol(testSimRes$y), y=testSimRes$y[i,], mode="markers", name=sprintf("observation[,%d]", i), marker=list(color=sprintf("rgba(%d,%d,%d,%f)", rgbValues[1,1], rgbValues[2,1], rgbValues[3,1], 0.5)))
-        # estimate
-        fig <- fig%>%add_trace(x=1:ncol(eMeanOneStepAheadForecast), y=eMeanOneStepAheadForecast[i,], mode="lines", name=sprintf("estimate[,%d]", i), line=list(color=sprintf("rgba(%d,%d,%d,%f)", rgbValues[1,1], rgbValues[2,1], rgbValues[3,1], 1), dash="solid"))
+        # forecast
+        fig <- fig%>%add_trace(x=1:ncol(eMeanOneStepAheadForecast), y=eMeanOneStepAheadForecast[i,], mode="lines", name=sprintf("forecast[,%d]", i), line=list(color=sprintf("rgba(%d,%d,%d,%f)", rgbValues[1,1], rgbValues[2,1], rgbValues[3,1], 1), dash="solid"))
         fig <- fig%>%add_trace(x=1:ncol(eMeanOneStepAheadForecast), y=eMeanOneStepAheadForecast[i,]+1.96*eSTDOneStepAheadForecast[i,], mode="lines", line=list(color="rgba(0,0,0,0)"), showlegend=FALSE)
         fig <- fig%>%add_trace(x=1:ncol(eMeanOneStepAheadForecast), y=eMeanOneStepAheadForecast[i,]-1.96*eSTDOneStepAheadForecast[i,], mode="lines", line=list(color="rgba(0,0,0,0)"), showlegend=FALSE, fill="tonexty", fillcolor=sprintf("rgba(%d,%d,%d,%f)", rgbValues[1,1], rgbValues[2,1], rgbValues[3,1], 0.2))
     }
-    fig <- fig %>% layout(title=sprintf("Log Likelihood=%f", eFRes$logLike), xaxis=list(title="Sample"), yaxis=list (title="Observation"))
+    fig <- fig %>% layout(title=sprintf("Log Likelihood=%f", eFRes$logLike), xaxis=list(title="Sample"), yaxis=list (title="Observation/Forecast"))
     pngFigFilename <- sprintf(figFilenamePattern, estResNumber, testSimResNumber, "png")
     htmlFigFilename <- sprintf(figFilenamePattern, estResNumber, testSimResNumber, "html")
-    # orca(p=fig, file=pngFigFilename)
+    orca(p=fig, file=pngFigFilename)
     htmlwidgets::saveWidget(as_widget(fig), file.path(normalizePath(dirname(htmlFigFilename)), basename(htmlFigFilename)))
-    # print(fig)
+    print(fig)
 
     browser()
 }
