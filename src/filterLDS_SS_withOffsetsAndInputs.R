@@ -16,7 +16,7 @@ filterLDS_SS_withOffsetsAndInputs <- function(y, B, u, C, c, Q, x00, V00, stateT
         # predicted state mean and covariance
         if(k==1) {
             if(stateType0=="init00") {
-                xnn1[,,k] <- B%*%x00+u+C%*%c[1]
+                xnn1[,,k] <- B%*%x00+u+C%*%c[,,1]
                 Vnn1[,,k] <- B%*%V00%*%t(B)+Q
             } else {
                 if(stateType0=="init10") {
@@ -27,11 +27,11 @@ filterLDS_SS_withOffsetsAndInputs <- function(y, B, u, C, c, Q, x00, V00, stateT
                 }
             }
         } else {
-            xnn1[,,k] <- B%*%xnn[,,k-1]+u+C%*%c[k]
+            xnn1[,,k] <- B%*%xnn[,,k-1]+u+C%*%c[,,k]
             Vnn1[,,k] <- B%*%Vnn[,,k-1]%*%t(B)+Q
         }
         # innovation
-        ynn1 <- Z%*%xnn1[,,k]+a+D%*%d[k]
+        ynn1 <- Z%*%xnn1[,,k]+a+D%*%d[,,k]
         innov[,,k] <- y[,k]-ynn1
         # innovation covariance
         S <- Z%*%Vnn1[,,k]%*%t(Z)+R
