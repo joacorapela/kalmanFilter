@@ -59,7 +59,7 @@ emEstimationKF_SS <- function(y, B0, Q0, Z0, R0, m0, V0, maxIter=50, tol=1e-4, v
             B <- S10%*%solve(S00)
         }
         if(varsToEstimate$transitionCovariance) {
-            Q <- (S11-B%*%t(S10))/N
+            Q <- (S11-S10%*%solve(S00)%*%t(S10))/N
             Q <- (t(Q)+Q)/2
         }
         if(varsToEstimate$observationMatrix) {
