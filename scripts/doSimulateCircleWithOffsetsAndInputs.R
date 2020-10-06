@@ -23,6 +23,7 @@ processAll <- function() {
             exit <- TRUE
         }
     }
+    simMetaDataFilename <- sprintf(simMetaDataFilenamePattern, simResNumber)
     show(sprintf("Simulation results in: %s", simResFilename))
 
     # sampling rate
@@ -71,6 +72,10 @@ processAll <- function() {
     res <- simulateLDSwithOffsetsAndInputs(B=B, u=u, C=C, c=c, Q=Q, x00=x00, V00=V00, Z=Z, a=a, D=D, d=d, R=R)
     simRes <- c(res, list(B=B, u=u, C=C, c=c, Q=Q, x00=x00, V00=V00, Z=Z, a=a, D=D, d=d, R=R))
     save(simRes, file=simResFilename)
+
+    metaData <- list()
+    metaData[["config_info"]] <- list(simResNumber=simResNumber)
+    write.ini(x=metaData, filepath=simMetaDataFilename)
 
     nObs <- ncol(res$x)
     hoverTextLatents <- sprintf("sample %d, x %.02f, y %.02f", 1:nObs, res$x[1,], res$x[2,])
