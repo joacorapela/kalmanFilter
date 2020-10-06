@@ -8,7 +8,7 @@ source("../src/estimateKFInitialCondFA.R")
 source("../src/estimateKFInitialCondPPCA.R")
 
 processAll <- function() {
-    estConfigNumber <- 3
+    estConfigNumber <- 4
     simResNumber <- 79772839
     simulationFilenamePattern <- "results/%s_simulation.RData"
 
@@ -87,7 +87,8 @@ processAll <- function() {
     initialConds <- c(initialConds, list(Q0=Q0, R0=R0, m0=m0, V0=V0))
 
     estRes <- emEstimationKF_SS_multiTrial(y=y, B0=initialConds$B, Q0=initialConds$Q0, Z0=initialConds$Z, R0=initialConds$R0, m0=initialConds$m0, V0=initialConds$V0, maxIter=maxIter, tol=tol, varsToEstimate=list(initialStateMean=TRUE, initialStateCovariance=TRUE, transitionMatrix=TRUE, transitionCovariance=TRUE, observationMatrix=TRUE, observationCovariance=TRUE))
-    # estRes <- emEstimationKF_SS_multiTrial(y=y, B0=simRes$B, Q0=simRes$Q, Z0=simRes$Z, R0=simRes$R, m0=simRes$m0, V0=simRes$V0, maxIter=maxIter, tol=tol, varsToEstimate=list(initialStateMean=TRUE, initialStateCovariance=TRUE, transitionMatrix=TRUE, transitionCovariance=TRUE, observationMatrix=TRUE, observationCovariance=TRUE))
+
+    show(estRes$stopReason)
 
     estRes <- c(estRes, list(initialConds=initialConds))
     save(file=estResFilename, estRes)
