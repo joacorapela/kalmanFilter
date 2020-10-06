@@ -48,23 +48,46 @@ emEstimationKF_SS_withOffsetsAndInputs <- function(y, c, d, B0, u0, C0, Q0, Z0, 
         Vnn1N <- lag1CovSmootherLDS_SS(Z=Z, KN=kf$KN, B=B, Vnn=kf$Vnn, Jn=ks$Jn, J0=ks$J0)
         if(varsToEstimate$B || varsToEstimate$Q) {
             Sxx10 <- ks$xnN[,,1]%*%t(ks$x0N)+Vnn1N[,,1]
-            Sxx11 <- ks$xnN[,,1]%*%t(ks$xnN[,,1])+ks$VnN[,,1]
-        }
-        if(varsToEstimate$Q || varsToEstimate$R || varsToEstimate$Z) {
             Sxx00 <- ks$x0N%*%t(ks$x0N)+ks$V0N
         }
+        if(varsToEstimate$Q || varsToEstimate$R || varsToEstimate$Z) {
+            Sxx11 <- ks$xnN[,,1]%*%t(ks$xnN[,,1])+ks$VnN[,,1]
+        }
+        if(varsToEstimate$B || varsToEstimate$C || varsToEstimate$Q) {
+            Sxc01 <- ks$x0N%*%t(c[,,1])
+        }
+        if(varsToEstimate$B || varsToEstimate$C || varsToEstimate$Q) {
+            Sxc11 <- ks$xnN[,,1]%*%t(c[,,1])
+        }
+        if(varsToEstimate$R) {
+            Syx11 <- y[,1]%*%t(ks$xnN[,,1])
+            Sxd11 <- ks$xnN[,1]%*%t(d[,,1])
+            Syy11 <- y[,1]%*%t(y[,,1])
+            Syd11 <- y[,1]%*%t(d[,,1])
+        }
         if(varsToEstimate$Z) {
-            Symsx <- (y[,1]-a-D%*%d[,,1])%*%t(ks$xnN[,,1])
+            Symsx11 <- (y[,1]-a-D%*%d[,,1])%*%t(ks$xnN[,,1])
         }
         if(varsToEstimate$D) {
-            Sy1d <- ((y[,1]-Z%*%ks$xnN[,,1]-a)%*%t(d[,,1]))
+            Sy1d11 <- (y[,1]-Z%*%ks$xnN[,,1]-a)%*%t(d[,,1])
         }
+        if(varsToEstimate$B || varsToEstimate$C || varsToEstimate$Q) {
+            Scc11 <- c[,1]%*%t(c[,,1])
+        }
+        if(varsToEstimate$D || varsToEstimate$R) {
+            Sdd11 <- d[,1]%*%t(d[,,1])
+        }
+        #
         if(varsToEstimate$a || varsToEstimate$R) {
-            Sy0 <- y[,1]
-            Sd0 <- d[,1]
+            Sy1 <- y[,1]
+            Sd1 <- d[,1]
         }
-        if(varsToEstimate$u || varsToEstimate$Q || varsToEstimate$a || varsToEstimate$R) {
-            Sx0 <- ks$xnN[,,1]
+        if(varsToEstimate$a || varsToEstimate$B || varsToEstimate$Q || varsToEstimate$R|| varsToEstimate$u ) {
+            Sx1 <- ks$xnN[,,1]
+        }
+        if(varsToEstimate$B || varsToEstimate$C || varsToEstimate$Q || varsToEstimate$u) {
+            Sx0 <- ks$x0N
+            Sc1 <- c[,,1]
         }
 
         for (i in 2:N) {
