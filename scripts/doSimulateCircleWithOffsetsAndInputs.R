@@ -9,7 +9,8 @@ processAll <- function() {
     simConfigFilename <- "data/00000000_simulation_metaData.ini"
     xlab <- "x"
     ylab <- "y"
-    simFilenamePattern <- "results/%08d_simulation.RData"
+    simResFilenamePattern <- "results/%08d_simulation.RData"
+    simMetaDataFilenamePattern <- "results/%08d_simulation.ini"
     simFigFilenamePattern <- "figures/%08d_simulation.%s"
 
     simConfig <- read.ini(simConfigFilename)
@@ -17,12 +18,12 @@ processAll <- function() {
     exit <- FALSE
     while(!exit) {
         simResNumber <- sample(1e8, 1)
-        simFilename <- sprintf(simFilenamePattern, simResNumber)
-        if(!file.exists(simFilename)) {
+        simResFilename <- sprintf(simResFilenamePattern, simResNumber)
+        if(!file.exists(simResFilename)) {
             exit <- TRUE
         }
     }
-    show(sprintf("Simulation results in: %s", simFilename))
+    show(sprintf("Simulation results in: %s", simResFilename))
 
     # sampling rate
     sRate <- as.double(simConfig$control_variables$sRate)
@@ -69,7 +70,7 @@ processAll <- function() {
 
     res <- simulateLDSwithOffsetsAndInputs(B=B, u=u, C=C, c=c, Q=Q, x00=x00, V00=V00, Z=Z, a=a, D=D, d=d, R=R)
     simRes <- c(res, list(B=B, u=u, C=C, c=c, Q=Q, x00=x00, V00=V00, Z=Z, a=a, D=D, d=d, R=R))
-    save(simRes, file=simFilename)
+    save(simRes, file=simResFilename)
 
     nObs <- ncol(res$x)
     hoverTextLatents <- sprintf("sample %d, x %.02f, y %.02f", 1:nObs, res$x[1,], res$x[2,])
