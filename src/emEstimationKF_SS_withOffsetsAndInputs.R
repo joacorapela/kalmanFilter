@@ -35,15 +35,15 @@ emEstimationKF_SS_withOffsetsAndInputs <- function(y, c, d, B0, u0, C0, Q0, Z0, 
         kf <- filterLDS_SS_withOffsetsAndInputs(y=y, c=c, d=d, B=B, u=u, C=C, Q=Q, m0=m0, V0=V0, Z=Z, a=a, D=D, R=R)
         show(sprintf("LogLike[%04d]=%f", iter, kf$logLike))
         logLike[iter] <- kf$logLike
-#         if (iter > 1) {
-#             cvg <- (logLike[iter]-logLike[iter-1])/abs(logLike[iter])
-#         }
-#         if (cvg < 0) {
-#             warning("Likelihood Not Increasing")
-#         }
-#         if (abs(cvg) < tol) {
-#             break
-#         }
+        if (iter > 1) {
+            cvg <- (logLike[iter]-logLike[iter-1])/abs(logLike[iter])
+        }
+        if (cvg < 0) {
+            warning("Likelihood Not Increasing")
+        }
+        if (abs(cvg) < tol) {
+            break
+        }
         ks <- smoothLDS_SS(B=B, u=u, C=C, c=c, Q=Q, xnn=kf$xnn, Vnn=kf$Vnn, xnn1=kf$xnn1, Vnn1=kf$Vnn1, m0=m0, V0=V0, c0=c0)
         Vnn1N <- lag1CovSmootherLDS_SS(Z=Z, KN=kf$KN, B=B, Vnn=kf$Vnn, Jn=ks$Jn, J0=ks$J0)
         if(varsToEstimate$B || varsToEstimate$Q) {
@@ -89,17 +89,57 @@ emEstimationKF_SS_withOffsetsAndInputs <- function(y, c, d, B0, u0, C0, Q0, Z0, 
             Sx0 <- ks$x0N
             Sc1 <- c[,,1]
         }
-
-        for (i in 2:N) {
-            Sxx11 <- Sxx11+ks$xnN[,,i]%*%t(ks$xnN[,,i])+ks$VnN[,,i]
-            Sxx10 <- Sxx10+ks$xnN[,,i]%*%t(ks$xnN[,,i-1])+Vnn1N[,,i]
-            Sxx00 <- Sxx00+ks$xnN[,,i-1]%*%t(ks$xnN[,,i-1])+ks$VnN[,,i-1]
-            if(varsToEstimate$observationMatrix) {
-                Z <- Z+y[,i]%*%t(ks$xnN[,,i])
+        for (n in 2:N) {
+            if(varsToEstimate$B || varsToEstimate$Q) {
+                Sxx10 <- Sxx10+ks$xnN[,,n]%*%t(ks$xnN[,,n-1])+Vnn1N[,,n]
+                Sxx00 <- Sxx00+ks$xnN[,,n-1]%*%t(ks$x[,,n-1])+ks$VnN[,,n-1]
+            }
+            if(varsToEstimate$Q || varsToEstimate$R || varsToEstimate$Z) {
+                Sxx11 <- Sxx11+ks$xnN[,,n]%*%t(ks$xnN[,,n])+ks$VnN[,,n]
+            }
+            if(varsToEstimate$B || varsToEstimate$C || varsToEstimate$Q) {
+                Sxc01 <- 0xc01+ks$xnN[,,n-1]%*%t(c[,,n])
+            }
+            if(varsToEstimate$B || varsToEstimate$C || varsToEstimate$Q) {
+                Sxc11 <- Sxc11+ks$xnN[,,n]%*%t(c[,,n])
+            }
+            if(varsToEstimate$R) {
+                Syx11 <- Syx11+y[,n]%*%t(ks$xnN[,,n])
+                Sxd11 <- Sxd11+ks$xnN[,n]%*%t(d[,,n])
+                Syy11 <- Syy11+y[,n]%*%t(y[,,n])
+                Syd11 <- Syd11+y[,n]%*%t(d[,,n])
+            }
+            if(varsToEstimate$Z) {
+                Symsx11 <- Symsx11+(y[,n]-a-D%*%d[,,n])%*%t(ks$xnN[,,n])
+            }
+            if(varsToEstimate$D) {
+                Sy1d11 <- Sy1d11+(y[,n]-Z%*%ks$xnN[,,n]-a)%*%t(d[,,n])
+            }
+            if(varsToEstimate$B || varsToEstimate$C || varsToEstimate$Q) {
+                Scc11 <- Scc11+c[,n]%*%t(c[,,n])
+            }
+            if(varsToEstimate$D || varsToEstimate$R) {
+                Sdd11 <- Sdd1+d[,n]%*%t(d[,,n])
+            }
+            #
+            if(varsToEstimate$a || varsToEstimate$R) {
+                Sy1 <- Sy1+y[,n]
+                Sd1 <- Sd1+d[,n]
+            }
+            if(varsToEstimate$a || varsToEstimate$B || varsToEstimate$Q || varsToEstimate$R|| varsToEstimate$u ) {
+                Sx1 <- Sx1+ks$xnN[,,n]
+            }
+            if(varsToEstimate$B || varsToEstimate$C || varsToEstimate$Q || varsToEstimate$u) {
+                Sx0 <- Sx0+ks$xnN[,,n-1]
+                Sc1 <- Sc1+c[,,n]
             }
         }
-        if(varsToEstimate$transitionMatrix) {
-            B <- Sxx10%*%solve(Sxx00)
+
+        if(varsToEstimate$B) {
+            commonFactor <- solve(Scc11-1/N*Sc1%*%t(Sc1))%*%(Scx10-1/N*Sc1%*%t(Sx0))
+            num <- Sxx10-1/N*Sx1%*%t(Sx0)-(Sxc11-1/N*Sx1%*%t(Sc1))%*%commonFactor
+            den <- Sxx00-1/N*Sx0%*%t(Sx0)-(Sxc01-1/N*Sx0%*%t(Sc1))%*%commonFactor
+            B <- num%*%solve(den)
         }
         if(varsToEstimate$transitionCovariance) {
             Q <- (Sxx11-B%*%t(Sxx10))/N
