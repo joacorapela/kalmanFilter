@@ -13,7 +13,28 @@ lag1CovSmootherLDS_SS <- function(Z, KN, B, Vnn, Jn, J0) {
     return(Vnn1N)
 }
 
-emEstimationKF_SS_withOffsetsAndInputs <- function(y, c, d, B0, u0, C0, Q0, Z0, a0, D0, R0, m0, V0, maxIter=50, tol=1e-4, varsToEstimate=list(initialStateMean=TRUE, initialStateCovariance=TRUE, transitionMatrix=TRUE, transitionCovariance=TRUE, observationMatrix=TRUE, observationCovariance=TRUE)) {
+emEstimationKF_SS_withOffsetsAndInputs <- function(y, c, d, B0, u0, C0, Q0, Z0, a0, D0, R0, m0, V0, maxIter=50, tol=1e-4, varsToEstimate=list(initialStateMean=TRUE, initialStateCovariance=TRUE, transitionMatrix=TRUE, transitionCovariance=TRUE, observationMatrix=TRUE, observationCovariance=TRUE), covsConstraints=list(V0="diagonal", Q="diagonal", R="diagonal")) {
+    if(covsConstraints$V0=="diagonal") {
+        nonDiagElems <- V0[col(V0)!=row(V0)]
+        isDiag <- sum(nonDiagElems)==0
+        if(!isDiag) {
+            stop("SRSigmaX00 should be diagonal according to constraint")
+        }
+    }
+    if(covsConstraints$Q0=="diagonal") {
+        nonDiagElems <- Q0[col(Q0)!=row(Q0)]
+        isDiag <- sum(nonDiagElems)==0
+        if(!isDiag) {
+            stop("SRSigmaW0 should be diagonal according to constraint")
+        }
+    }
+    if(covsConstraints$R0=="diagonal") {
+        nonDiagElems <- R0[col(R0)!=row(R0)]
+        isDiag <- sum(nonDiagElems)==0
+        if(!isDiag) {
+            stop("SRSigmaV0 should be diagonal according to constraint")
+        }
+    }
     B <- as.matrix(B0)
     u <- as.matrix(u0)
     C <- as.matrix(C0)
