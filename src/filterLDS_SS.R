@@ -13,7 +13,6 @@ filterLDS_SS <- function(y, B, m0, V0, Q, Z, R) {
     Vnn <- array(NA, dim=c(M, M, N))
     innov <- array(NA, dim=c(P, 1, N))
     Sn <- array(NA, dim=c(P, P, N))
-    logLike <- 0
     m0 <- as.matrix(m0, nrow=M, ncol=1)
     V0 <- as.matrix(V0, nrow=M, ncol=M)
 

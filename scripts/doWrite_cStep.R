@@ -1,6 +1,6 @@
 
 processAll <- function() {
-    durationSamples <- 2000
+    durationSamples <- 5000
     baselineValue <- 0.0
     stepValue <- 1.0
     stepStart <- 750
