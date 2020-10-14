@@ -2,6 +2,7 @@
 .RData
 .Rhistory
 shumwayAndStoffer11/*
+data/
 figures/
 scripts/results/*.RData
 scripts/data/*.ini
