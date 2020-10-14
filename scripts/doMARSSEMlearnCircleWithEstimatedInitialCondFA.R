@@ -52,7 +52,7 @@ processAll <- function() {
     kem <- MARSS(zs, model=model.list, inits=inits, control=control, silent=2)
 
     if(kem$convergence>1) {
-        stop(sprintf("MARSS did not converged (convergence=%d)", kem$convergence))
+        warning(sprintf("MARSS did not converged (convergence=%d)", kem$convergence))
     }
     logLikFigFilename <- "figures/circleMARSS_logLik.html"
     logLik <- kem$iter.record$logLik
