@@ -13,7 +13,7 @@ lag1CovSmootherLDS_SS <- function(Z, KN, B, Vnn, Jn, J0) {
     return(Vnn1N)
 }
 
-emEstimationKF_SS_withOffsetsAndInputs <- function(y, c, d, B0, u0, C0, Q0, Z0, a0, D0, R0, m0, V0, maxIter=50, tol=1e-4, varsToEstimate=list(initialStateMean=TRUE, initialStateCovariance=TRUE, transitionMatrix=TRUE, transitionCovariance=TRUE, observationMatrix=TRUE, observationCovariance=TRUE)) {
+emEstimationKF_SS_withOffsetsAndInputs <- function(y, c, d, B0, u0, C0, Q0, Z0, a0, D0, R0, m0, V0, maxIter=50, tol=1e-4, varsToEstimate=list(m0=TRUE, V0=TRUE, B=TRUE, u=TRUE, C=TRUE, Q=TRUE, Z=TRUE, a=TRUE, D=TRUE, R=TRUE)) {
     B <- as.matrix(B0)
     u <- as.matrix(u0)
     C <- as.matrix(C0)
@@ -22,13 +22,14 @@ emEstimationKF_SS_withOffsetsAndInputs <- function(y, c, d, B0, u0, C0, Q0, Z0, 
     a <- as.matrix(a0)
     D <- as.matrix(D0)
     R <- as.matrix(R0)
+    m0 <- as.matrix(m0)
     V0 <- as.matrix(V0)
 
     M <- nrow(B0)
     N <- ncol(y)
     y <- as.matrix(y)
-    c <- as.matrix(c)
-    d <- as.matrix(d)
+    # c <- as.matrix(c)
+    # d <- as.matrix(d)
     cvg <- 1 + tol
     logLike <- matrix(0, maxIter, 1)
     for(iter in 1:maxIter) {
@@ -40,12 +41,14 @@ emEstimationKF_SS_withOffsetsAndInputs <- function(y, c, d, B0, u0, C0, Q0, Z0, 
         }
         if (cvg < 0) {
             warning("Likelihood Not Increasing")
+            break
         }
         if (abs(cvg) < tol) {
             break
         }
-        ks <- smoothLDS_SS(B=B, u=u, C=C, c=c, Q=Q, xnn=kf$xnn, Vnn=kf$Vnn, xnn1=kf$xnn1, Vnn1=kf$Vnn1, m0=m0, V0=V0, c0=c0)
+        ks <- smoothLDS_SS_withOffsetsAndInputs(B=B, u=u, C=C, c=c, Q=Q, xnn=kf$xnn, Vnn=kf$Vnn, xnn1=kf$xnn1, Vnn1=kf$Vnn1, m0=m0, V0=V0, initStateAt=0)
         Vnn1N <- lag1CovSmootherLDS_SS(Z=Z, KN=kf$KN, B=B, Vnn=kf$Vnn, Jn=ks$Jn, J0=ks$J0)
+        # begin compute summary statistics
         if(varsToEstimate$B || varsToEstimate$Q) {
             Sxx10 <- ks$xnN[,,1]%*%t(ks$x0N)+Vnn1N[,,1]
             Sxx00 <- ks$x0N%*%t(ks$x0N)+ks$V0N
@@ -61,8 +64,8 @@ emEstimationKF_SS_withOffsetsAndInputs <- function(y, c, d, B0, u0, C0, Q0, Z0, 
         }
         if(varsToEstimate$R) {
             Syx11 <- y[,1]%*%t(ks$xnN[,,1])
-            Sxd11 <- ks$xnN[,1]%*%t(d[,,1])
-            Syy11 <- y[,1]%*%t(y[,,1])
+            Sxd11 <- ks$xnN[,,1]%*%t(d[,,1])
+            Syy11 <- y[,1]%*%t(y[,1])
             Syd11 <- y[,1]%*%t(d[,,1])
         }
         if(varsToEstimate$Z) {
@@ -72,15 +75,15 @@ emEstimationKF_SS_withOffsetsAndInputs <- function(y, c, d, B0, u0, C0, Q0, Z0, 
             Sy1d11 <- (y[,1]-Z%*%ks$xnN[,,1]-a)%*%t(d[,,1])
         }
         if(varsToEstimate$B || varsToEstimate$C || varsToEstimate$Q) {
-            Scc11 <- c[,1]%*%t(c[,,1])
+            Scc11 <- c[,,1]%*%t(c[,,1])
         }
         if(varsToEstimate$D || varsToEstimate$R) {
-            Sdd11 <- d[,1]%*%t(d[,,1])
+            Sdd11 <- d[,,1]%*%t(d[,,1])
         }
         #
         if(varsToEstimate$a || varsToEstimate$R) {
             Sy1 <- y[,1]
-            Sd1 <- d[,1]
+            Sd1 <- d[,,1]
         }
         if(varsToEstimate$a || varsToEstimate$B || varsToEstimate$Q || varsToEstimate$R|| varsToEstimate$u ) {
             Sx1 <- ks$xnN[,,1]
@@ -92,21 +95,21 @@ emEstimationKF_SS_withOffsetsAndInputs <- function(y, c, d, B0, u0, C0, Q0, Z0, 
         for (n in 2:N) {
             if(varsToEstimate$B || varsToEstimate$Q) {
                 Sxx10 <- Sxx10+ks$xnN[,,n]%*%t(ks$xnN[,,n-1])+Vnn1N[,,n]
-                Sxx00 <- Sxx00+ks$xnN[,,n-1]%*%t(ks$x[,,n-1])+ks$VnN[,,n-1]
+                Sxx00 <- Sxx00+ks$xnN[,,n-1]%*%t(ks$xnN[,,n-1])+ks$VnN[,,n-1]
             }
             if(varsToEstimate$Q || varsToEstimate$R || varsToEstimate$Z) {
                 Sxx11 <- Sxx11+ks$xnN[,,n]%*%t(ks$xnN[,,n])+ks$VnN[,,n]
             }
             if(varsToEstimate$B || varsToEstimate$C || varsToEstimate$Q) {
-                Sxc01 <- 0xc01+ks$xnN[,,n-1]%*%t(c[,,n])
+                Sxc01 <- Sxc01+ks$xnN[,,n-1]%*%t(c[,,n])
             }
             if(varsToEstimate$B || varsToEstimate$C || varsToEstimate$Q) {
                 Sxc11 <- Sxc11+ks$xnN[,,n]%*%t(c[,,n])
             }
             if(varsToEstimate$R) {
                 Syx11 <- Syx11+y[,n]%*%t(ks$xnN[,,n])
-                Sxd11 <- Sxd11+ks$xnN[,n]%*%t(d[,,n])
-                Syy11 <- Syy11+y[,n]%*%t(y[,,n])
+                Sxd11 <- Sxd11+ks$xnN[,,n]%*%t(d[,,n])
+                Syy11 <- Syy11+y[,n]%*%t(y[,n])
                 Syd11 <- Syd11+y[,n]%*%t(d[,,n])
             }
             if(varsToEstimate$Z) {
@@ -116,15 +119,15 @@ emEstimationKF_SS_withOffsetsAndInputs <- function(y, c, d, B0, u0, C0, Q0, Z0, 
                 Sy1d11 <- Sy1d11+(y[,n]-Z%*%ks$xnN[,,n]-a)%*%t(d[,,n])
             }
             if(varsToEstimate$B || varsToEstimate$C || varsToEstimate$Q) {
-                Scc11 <- Scc11+c[,n]%*%t(c[,,n])
+                Scc11 <- Scc11+c[,,n]%*%t(c[,,n])
             }
             if(varsToEstimate$D || varsToEstimate$R) {
-                Sdd11 <- Sdd1+d[,n]%*%t(d[,,n])
+                Sdd11 <- Sdd11+d[,,n]%*%t(d[,,n])
             }
             #
             if(varsToEstimate$a || varsToEstimate$R) {
                 Sy1 <- Sy1+y[,n]
-                Sd1 <- Sd1+d[,n]
+                Sd1 <- Sd1+d[,,n]
             }
             if(varsToEstimate$a || varsToEstimate$B || varsToEstimate$Q || varsToEstimate$R|| varsToEstimate$u ) {
                 Sx1 <- Sx1+ks$xnN[,,n]
@@ -134,37 +137,103 @@ emEstimationKF_SS_withOffsetsAndInputs <- function(y, c, d, B0, u0, C0, Q0, Z0, 
                 Sc1 <- Sc1+c[,,n]
             }
         }
+        # end compute summary statistics
 
+        # begin compute estimates
         if(varsToEstimate$B) {
-            commonFactor <- solve(Scc11-1/N*Sc1%*%t(Sc1))%*%(Scx10-1/N*Sc1%*%t(Sx0))
+            commonFactor <- solve(Scc11-1/N*Sc1%*%t(Sc1))%*%(t(Sxc01)-1/N*Sc1%*%t(Sx0))
             num <- Sxx10-1/N*Sx1%*%t(Sx0)-(Sxc11-1/N*Sx1%*%t(Sc1))%*%commonFactor
             den <- Sxx00-1/N*Sx0%*%t(Sx0)-(Sxc01-1/N*Sx0%*%t(Sc1))%*%commonFactor
             B <- num%*%solve(den)
         }
-        if(varsToEstimate$transitionCovariance) {
-            Q <- (Sxx11-B%*%t(Sxx10))/N
+        if(varsToEstimate$C) {
+            num <- Sxc11-B%*%Sxc01-1/N*(Sx1-B%*%Sx0)%*%t(Sc1)
+            den <- Scc11-1/N*Sc1%*%t(Sc1)
+            C <- num%*%solve(den)
+        }
+        if(varsToEstimate$u) {
+            u <- 1/N*(Sx1-B%*%Sx0-C%*%Sc1)
+        }
+        if(varsToEstimate$Q) {
+            Q <- Sxx11
+
+            aux <- Sxx10%*%t(B)
+            Q <- Q-(aux+t(aux))
+
+            aux <- Sx1%*%t(u)
+            Q <- Q-(aux+t(aux))
+
+            aux <- Sxc11%*%t(C)
+            Q <- Q-(aux+t(aux))
+
+            Q <- Q+B%*%Sxx00%*%t(B)
+
+            aux <- B%*%Sx0%*%t(u)
+            Q <- Q+(aux+t(aux))
+
+            aux <- B%*%Sxc01%*%t(C)
+            Q <- Q+(aux+t(aux))
+
+            Q <- Q+N*u%*%t(u)
+
+            aux <- u%*%Sc1%*%t(C)
+            Q <- Q+(aux+t(aux))
+
+            Q <- Q+C%*%Scc11%*%t(C)
+
+            Q <- Q/N
+
             Q <- (t(Q)+Q)/2
         }
-        if(varsToEstimate$observationMatrix) {
-            Z <- Z%*%solve(Sxx11)
+        if(varsToEstimate$Z) {
+            Z <- Symsx11%*%solve(Sxx11)
         }
-        # Now that Z is estimated, lets estimate R, if requested
-        if(varsToEstimate$observationCovariance) {
-            u <- y[,1]-Z%*% ks$xnN[,,1]
-            R <- u%*%t(u)+Z%*%ks$VnN[,,1]%*%t(Z)
-            for (i in 2:N) {
-                u <- y[,i]-Z%*%ks$xnN[,,i]
-                R <- R+u%*%t(u)+Z%*%ks$VnN[,,i]%*%t(Z)
-            }
+        if(varsToEstimate$D) {
+            D <- Sy1d11%*%solve(Sdd11)
+        }
+        if(varsToEstimate$a) {
+            a <- (Sy1-Z%*%Sx1-D%*%Sd1)/N
+        }
+        if(varsToEstimate$R) {
+            R <- Syy11
+
+            aux <- Syx11%*%t(Z)
+            R <- R-(aux+t(aux))
+
+            aux <- Sy1%*%t(a)
+            R <- R-(aux+t(aux))
+
+            aux <- Syd11%*%t(D)
+            R <- R-(aux+t(aux))
+
+            R <- R+Z%*%Sxx11%*%t(Z)
+
+            aux <- Z%*%Sx1%*%t(a)
+            R <- R+(aux+t(aux))
+
+            aux <- Z%*%Sxd11%*%t(D)
+            R <- R+(aux+t(aux))
+
+            R <- R+N*a%*%t(a)
+
+            aux <- a%*%Sd1%*%t(D)
+            R <- R+(aux+t(aux))
+
+            R <- R+D%*%Sdd11%*%t(D)
+
             R <- R/N
+
+            R <- (R+t(R))/2
         }
-        if(varsToEstimate$initialStateMean) {
+        if(varsToEstimate$m0) {
             m0 <- ks$x0N
         }
-        if(varsToEstimate$initialStateCovariance) {
+        if(varsToEstimate$V0) {
             V0 <- ks$V0N
+            V0 <- (V0+t(V0))/2
         }
+        # end compute estimates
     }
-    answer <- list(B=B, Q=Q, Z=Z, R=R, m0=m0, V0=V0, logLike=logLike[1:iter], niter=iter, cvg=cvg)
+    answer <- list(B=B, u=u, C=C, Q=Q, Z=Z, a=a, D=D, R=R, m0=m0, V0=V0, logLike=logLike[1:iter], niter=iter, cvg=cvg)
     return(answer)
 }
