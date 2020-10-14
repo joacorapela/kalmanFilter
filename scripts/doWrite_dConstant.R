@@ -1,6 +1,6 @@
 
 processAll <- function() {
-    durationSamples <- 2000
+    durationSamples <- 5000
     constantValue <- 0.0
     filenamePattern <- "data/d_constant_durationSamples%d_constantValue%.02f.csv"
 
