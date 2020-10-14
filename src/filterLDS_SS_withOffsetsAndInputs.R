@@ -1,29 +1,33 @@
-filterLDS_SS_withOffsetsAndInputs <- function(y, B, u, C, c, Q, x00, V00, stateType0, Z, a, D, d, R) {
+filterLDS_SS_withOffsetsAndInputs <- function(y, B, u, C, c, Q, m0, V0, Z, a, D, d, R, initStateAt=0) {
+    # N: number of observations
+    # M: dim state space
+    # P: dim observations
     M <- nrow(B)
-    nObs <- ncol(y)
-    N <- nrow(y)
-    xnn1 <- array(NA, dim=c(M, 1, nObs))
-    Vnn1 <- array(NA, dim=c(M, M, nObs))
-    xnn <- array(NA, dim=c(M, 1, nObs))
-    Vnn <- array(NA, dim=c(M, M, nObs))
-    innov <- array(NA, dim=c(N, 1, nObs))
-    Sn <- array(NA, dim=c(N, N, nObs))
-    x00 <- as.matrix(x00, nrow=M, ncol=1)
-    V00 = as.matrix(V00, nrow=M, ncol=M)
-    logLike <- 0
+    N <- ncol(y)
+    P <- nrow(y)
+    xnn1 <- array(NA, dim=c(M, 1, N))
+    Vnn1 <- array(NA, dim=c(M, M, N))
+    xnn <- array(NA, dim=c(M, 1, N))
+    Vnn <- array(NA, dim=c(M, M, N))
+    innov <- array(NA, dim=c(P, 1, N))
+    Sn <- array(NA, dim=c(P, P, N))
+    m0 <- as.matrix(m0, nrow=M, ncol=1)
+    V0 = as.matrix(V0, nrow=M, ncol=M)
+    # logLike <- 0
+    logLike <- -N*P*log(2*pi)
 
-    for(k in 1:nObs) {
+    for(k in 1:N) {
         # predicted state mean and covariance
         if(k==1) {
-            if(stateType0=="init00") {
-                xnn1[,,k] <- B%*%x00+u+C%*%c[,,1]
-                Vnn1[,,k] <- B%*%V00%*%t(B)+Q
+            if(initStateAt==0) {
+                xnn1[,,k] <- B%*%m0+u+C%*%c[,,1]
+                Vnn1[,,k] <- B%*%V0%*%t(B)+Q
             } else {
-                if(stateType0=="init10") {
-                    xnn1[,,k] <- x00
-                    Vnn1[,,k] <- V00
+                if(initStateAt==1) {
+                    xnn1[,,k] <- m0
+                    Vnn1[,,k] <- V0
                 } else {
-                    stop(sprintf("Invalid stateType0 value: %s", stateType0))
+                    stop(sprintf("Invalid initStateAt value: %s", initStateAt))
                 }
             }
         } else {
