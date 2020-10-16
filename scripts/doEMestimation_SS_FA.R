@@ -1,6 +1,7 @@
 
 require(MASS)
 require(reshape2)
+require(ini)
 source("../src/emEstimationKF_SS.R")
 source("../src/filterLDS_SS.R")
 source("../src/smoothLDS_SS.R")
@@ -8,8 +9,9 @@ source("../src/estimateKFInitialCondFA.R")
 source("../src/estimateKFInitialCondPPCA.R")
 
 processAll <- function() {
-    estConfigNumber <- 1
-    simResNumber <- 95498373
+    estConfigNumber <- 2
+    # simResNumber <- 95498373
+    simResNumber <- 21919562
     simulationFilenamePattern <- "results/%s_simulation.RData"
 
     estResFilenamePattern <- "results/%08d_estimation.RData"
@@ -42,12 +44,10 @@ processAll <- function() {
     M <- nrow(V0)
     Q0 <- eval(parse(text=estConfig$initial_values$Q0))
     R0 <- eval(parse(text=estConfig$initial_values$R0))
-    maxIter <- 100
 
     simRes <- get(load(simulationFilename))
     y <- simRes$y
     P <- nrow(y)
-    browser()
     if(tolower(estConfig$initial_values$m0)=="simulated") {
         m0 <- simRes$m0
     } else {
