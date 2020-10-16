@@ -9,7 +9,7 @@ source("../src/estimateKFInitialCondFA.R")
 source("../src/estimateKFInitialCondPPCA.R")
 
 processAll <- function() {
-    estConfigNumber <- 1
+    estConfigNumber <- 3
     simResNumber <- 58388369
     simConfigFilenamePattern <- "data/%08d_simulation_metaData.ini"
     simResMetaDataFilenamePattern <- "results/%08d_simulation.ini"
@@ -54,6 +54,7 @@ processAll <- function() {
     # EM convergence tolerance
     tol <- as.double(estConfig$control_variables$tol)
     maxIter <- as.numeric(estConfig$control_variables$maxIter)
+    maxIter <- maxIter+1 # to make a fair comparison with MARSS
 
     V0 <- eval(parse(text=estConfig$initial_values$V0))
     u0 <- eval(parse(text=estConfig$initial_values$u0))
@@ -84,14 +85,20 @@ processAll <- function() {
     initialConds <- estimateKFInitialCondPPCA(z=t(as.matrix(y)), nFactors=M)
     initialConds <- c(initialConds, list(u0=u0, C0=C0, Q0=Q0, a0=a0, D0=D0, R0=R0, m0=m0, V0=V0))
 
-    estRes <- emEstimationKF_SS_withOffsetsAndInputs(y=y, c=c, d=d, B0=initialConds$B, u0=initialConds$u0, C0=initialConds$C0, Q0=initialConds$Q0, Z0=initialConds$Z, a0=initialConds$a0, D0=initialConds$D0, R0=initialConds$R0, m0=initialConds$m0, V0=initialConds$V0, maxIter=maxIter, tol=tol, varsToEstimate=list(m0=TRUE, V0=TRUE, B=TRUE, u=TRUE, C=TRUE, Q=TRUE, Z=TRUE, a=TRUE, D=FALSE, R=TRUE))
+    startTime <- proc.time()[3]
+    dsSSM <- emEstimationKF_SS_withOffsetsAndInputs(y=y, c=c, d=d, B0=initialConds$B, u0=initialConds$u0, C0=initialConds$C0, Q0=initialConds$Q0, Z0=initialConds$Z, a0=initialConds$a0, D0=initialConds$D0, R0=initialConds$R0, m0=initialConds$m0, V0=initialConds$V0, maxIter=maxIter, tol=tol, varsToEstimate=list(m0=TRUE, V0=TRUE, B=TRUE, u=TRUE, C=TRUE, Q=TRUE, Z=TRUE, a=TRUE, D=FALSE, R=TRUE))
+    elapsedTime <- proc.time()[3]-startTime
+    elapsedTime <- unname(elapsedTime)
 
-    estRes <- c(estRes, list(initialConds=initialConds))
+    show(sprintf("Elapsed time: %f", elapsedTime))
+
+    estRes <- list(dsSSM=dsSSM, y=y, c=c, d=d, initialConds=initialConds)
     save(file=estResFilename, estRes)
 
     metaData <- list()
     metaData[["simulation_info"]] <- list(simResNumber=simResNumber)
     metaData[["estimation_config_info"]] <- list(estConfigNumber=estConfigNumber)
+    metaData[["estimation_summary"]] <- list(logLik=dsSSM$logLik[length(dsSSM$logLik)], elapsedTime=elapsedTime)
     write.ini(x=metaData, filepath=estResMetaDataFilename)
 
     browser()
