@@ -13,22 +13,22 @@ lag1CovSmootherLDS_SS <- function(Z, KN, B, Vnn, Jn, J0) {
     return(Vnn1N)
 }
 
-emEstimationKF_SS_withOffsetsAndInputs <- function(y, c, d, B0, u0, C0, Q0, Z0, a0, D0, R0, m0, V0, maxIter=50, tol=1e-4, varsToEstimate=list(initialStateMean=TRUE, initialStateCovariance=TRUE, transitionMatrix=TRUE, transitionCovariance=TRUE, observationMatrix=TRUE, observationCovariance=TRUE), covsConstraints=list(V0="diagonal", Q="diagonal", R="diagonal")) {
-    if(covsConstraints$V0=="diagonal") {
+emEstimationKF_SS_withOffsetsAndInputs <- function(y, c, d, B0, u0, C0, Q0, Z0, a0, D0, R0, m0, V0, maxIter=50, tol=1e-4, varsToEstimate=list(initialStateMean=TRUE, initialStateCovariance=TRUE, transitionMatrix=TRUE, transitionCovariance=TRUE, observationMatrix=TRUE, observationCovariance=TRUE), covsConstraints=list(V0="diagonal and unequal", Q="diagonal and unequal", R="diagonal and unequal")) {
+    if(covsConstraints$V0=="diagonal and unequal") {
         nonDiagElems <- V0[col(V0)!=row(V0)]
         isDiag <- sum(nonDiagElems)==0
         if(!isDiag) {
             stop("SRSigmaX00 should be diagonal according to constraint")
         }
     }
-    if(covsConstraints$Q0=="diagonal") {
+    if(covsConstraints$Q=="diagonal and unequal") {
         nonDiagElems <- Q0[col(Q0)!=row(Q0)]
         isDiag <- sum(nonDiagElems)==0
         if(!isDiag) {
             stop("SRSigmaW0 should be diagonal according to constraint")
         }
     }
-    if(covsConstraints$R0=="diagonal") {
+    if(covsConstraints$R=="diagonal and unequal") {
         nonDiagElems <- R0[col(R0)!=row(R0)]
         isDiag <- sum(nonDiagElems)==0
         if(!isDiag) {
@@ -205,6 +205,9 @@ emEstimationKF_SS_withOffsetsAndInputs <- function(y, c, d, B0, u0, C0, Q0, Z0, 
             Q <- Q/N
 
             Q <- (t(Q)+Q)/2
+            if(covsConstraints$Q=="diagonal and unequal") {
+                Q <- diag(diag(Q), nrow=nrow(Q))
+            }
         }
         if(varsToEstimate$Z) {
             Z <- Symsx11%*%solve(Sxx11)
@@ -245,6 +248,10 @@ emEstimationKF_SS_withOffsetsAndInputs <- function(y, c, d, B0, u0, C0, Q0, Z0, 
             R <- R/N
 
             R <- (R+t(R))/2
+
+            if(covsConstraints$R=="diagonal and unequal") {
+                R <- diag(diag(R), nrow=nrow(R))
+            }
         }
         if(varsToEstimate$m0) {
             m0 <- ks$x0N
@@ -252,6 +259,10 @@ emEstimationKF_SS_withOffsetsAndInputs <- function(y, c, d, B0, u0, C0, Q0, Z0, 
         if(varsToEstimate$V0) {
             V0 <- ks$V0N
             V0 <- (V0+t(V0))/2
+
+            if(covsConstraints$V0=="diagonal and unequal") {
+                V0 <- diag(diag(V0), nrow=nrow(V0))
+            }
         }
         # end compute estimates
     }
