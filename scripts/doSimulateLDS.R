@@ -5,7 +5,7 @@ require(htmlwidgets)
 source("../src/simulateLDS.R")
 
 processAll <- function() {
-    simConfigNumber <- 2
+    simConfigNumber <- 5
     xlab <- "x"
     ylab <- "y"
     simConfigFilenamePattern <- "data/%08d_simulation_metaData.ini"
@@ -27,6 +27,7 @@ processAll <- function() {
     simResMetaDataFilename <- sprintf(simResMetaDataFilenamePattern, simResNumber)
     show(sprintf("Simulation results in: %s", simFilename))
 
+browser()
     # sampling rate
     sRate <- as.double(simConfig$control_variables$sRate)
     dt <- 1/sRate
