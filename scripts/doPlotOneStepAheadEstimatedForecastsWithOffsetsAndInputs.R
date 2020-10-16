@@ -13,7 +13,7 @@ processAll <- function() {
     # estResNumber <- 99485472
     # estResNumber <- 93973929
     # estResNumber <- 59934313
-    estResNumber <- 27646949
+    estResNumber <- 43378880
     simFilenamePattern <- "results/%08d_simulation.RData"
     estResFilenamePattern <- "results/%08d_estimation.RData"
     estConfigFilenamePattern <- "data/%08d_estimation_metaData.ini"
