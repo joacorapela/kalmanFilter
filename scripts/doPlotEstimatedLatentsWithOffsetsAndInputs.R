@@ -1,6 +1,7 @@
 
 require(plotly)
 require(RColorBrewer)
+require(ini)
 source("../src/getPlotTrueInitialAndEstimatedMatrices.R")
 source("../src/getPlotTrueInitialAndEstimatedVectors.R")
 source("../src/filterLDS_SS_withOffsetsAndInputs.R")
@@ -10,7 +11,8 @@ processAll <- function() {
     # estResNumber <- 99485472
     # estResNumber <- 67957061
     # estResNumber <- 93973929
-    estResNumber <- 59934313
+    # estResNumber <- 59934313
+    estResNumber <- 43378880
     simFilenamePattern <- "results/%08d_simulation.RData"
     estResFilenamePattern <- "results/%08d_estimation.RData"
     estConfigFilenamePattern <- "data/%08d_estimation_metaData.ini"
@@ -59,7 +61,7 @@ processAll <- function() {
     htmlFigFilename <- sprintf("figures//%.08d_latents.%s", estResNumber, "html")
     orca(p=fig, file=pngFigFilename)
     htmlwidgets::saveWidget(as_widget(fig), file.path(normalizePath(dirname(htmlFigFilename)), basename(htmlFigFilename)))
-    print(fig)
+    # print(fig)
 
     browser()
 }
