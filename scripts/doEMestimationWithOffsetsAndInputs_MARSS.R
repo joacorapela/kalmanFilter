@@ -7,7 +7,7 @@ source("../src/estimateKFInitialCondFA.R")
 source("../src/estimateKFInitialCondPPCA.R")
 
 processAll <- function() {
-    estConfigNumber <- 1
+    estConfigNumber <- 3
     simResNumber <- 58388369
     simConfigFilenamePattern <- "data/%08d_simulation_metaData.ini"
     simResMetaDataFilenamePattern <- "results/%08d_simulation.ini"
@@ -28,9 +28,9 @@ processAll <- function() {
     dt <- 1/sRate
     c <- as.matrix(read.table(simConfig$state_variables$cFilename))
     c <- c*dt
-    dim(c) <- c(1, 1, length(c))
+    dim(c) <- c(1, length(c))
     # d <- as.matrix(read.table(simConfig$measurements_variables$dFilename))
-    # dim(d) <- c(1, 1, length(d))
+    # dim(d) <- c(1, length(d))
 
     simResFilename <- sprintf(simResFilenamePattern, simResNumber)
 
@@ -49,8 +49,6 @@ processAll <- function() {
     estConfigFilename <- sprintf(estConfigFilenamePattern, estConfigNumber)
     estConfig <- read.ini(estConfigFilename)
 
-    # EM convergence tolerance
-    tol <- as.double(estConfig$control_variables$tol)
     maxIter <- as.numeric(estConfig$control_variables$maxIter)
 
     V0 <- eval(parse(text=estConfig$initial_values$V0))
@@ -61,7 +59,6 @@ processAll <- function() {
     a0 <- eval(parse(text=estConfig$initial_values$a0))
     # D0 <- eval(parse(text=estConfig$initial_values$D0))
     R0 <- eval(parse(text=estConfig$initial_values$R0))
-    maxIter <- 100
 
     simRes <- get(load(simResFilename))
     y <- simRes$y
@@ -82,29 +79,27 @@ processAll <- function() {
     B1  <- matrix(list("b11", "b21", "b12", "b22"), nrow=2)
     U1  <- "unconstrained"
     C1  <- "unconstrained"
-    Q1  <- "unconstrained"
+    Q1  <- "diagonal and unequal"
     Z1  <- matrix(list("z11", "z21", "z12", "z22"), nrow=2)
     A1  <- "unconstrained"
     # D1  <- "unconstrained"
-    R1  <- "unconstrained"
+    R1  <- "diagonal and unequal"
     pi1 <- "unequal"
-    V01 <- "unconstrained"
+    V01 <- "diagonal and unequal"
 
-    # model.list <- list(B=B1, U=U1, C=C1, Q=Q1, Z=Z1, A=A1, D=D1, d=d, R=R1, x0=pi1, V0=V01)
-    model.list <- list(B=B1, U=U1, C=C1, Q=Q1, Z=Z1, A=A1, R=R1, x0=pi1, V0=V01)
+    model.list <- list(B=B1, U=U1, C=C1, c=c, Q=Q1, Z=Z1, A=A1, R=R1, x0=pi1, V0=V01)
     # end create model
 
-    V0 <- eval(parse(text=estConfig$initial_values$V0))
+    V0 <- diag(eval(parse(text=estConfig$initial_values$V0)))
     u0 <- eval(parse(text=estConfig$initial_values$u0))
     C0 <- eval(parse(text=estConfig$initial_values$C0))
-    Q0 <- eval(parse(text=estConfig$initial_values$Q0))
+    Q0 <- diag(eval(parse(text=estConfig$initial_values$Q0)))
     a0 <- eval(parse(text=estConfig$initial_values$a0))
     # D0 <- eval(parse(text=estConfig$initial_values$D0))
-    R0 <- eval(parse(text=estConfig$initial_values$R0))
+    R0 <- diag(eval(parse(text=estConfig$initial_values$R0)))
 
     # initialConds <- estimateKFInitialCondFA(z=t(as.matrix(y)), nFactors=M)
     initialConds <- estimateKFInitialCondPPCA(z=t(as.matrix(y)), nFactors=M)
-    # initialConds <- c(initialConds, list(u=u0, C=C0, Q=Q0, a=a0, D=D0, R=R0, m0=m0, V0=V0))
     initialConds <- c(initialConds, list(u=u0, C=C0, Q=Q0, a=a0, R=R0, m0=m0, V0=V0))
 
     B0 <- matrix(as.vector(initialConds$B), ncol=1)
@@ -121,14 +116,16 @@ processAll <- function() {
     R0 <- initialConds$R
     R0lowerTri <- matrix(R0[lower.tri(R0, diag=TRUE)], ncol=1)
     inits <- list(B=B0, U=u0, C=C0, Q=Q0lowerTri, x0=x0, V0=V0lowerTri, Z=Z0, A=a0, R=R0lowerTri)
-    # inits <- list(B=B0, Z=Z0)
 
-    control <- list(maxit=maxIter, trace=1, safe=TRUE)
+    control <- list(maxit=maxIter, trace=1, safe=FALSE)
 
-    kem <- MARSS(y, model=model.list, inits=inits, control=control, silent=2, fun.kf="MARSSkfss")
-    # kem <- MARSS(y, model=model.list, control=control, silent=2, fun.kf="MARSSkfss")
+    startTime <- proc.time()[3]
+    estRes <- MARSS(y, model=model.list, inits=inits, control=control, silent=2, fun.kf="MARSSkfss")
+    elapsedTime <- proc.time()[3]-startTime
 
-    estRes <- c(kem, list(initialConds=initialConds))
+    show(sprintf("Elapsed time: %f, Log Likelihood: %f", elapsedTime, estRes$logLik))
+
+    estRes <- c(estRes, list(initialConds=initialConds, c=c, elapsedTime=elapsedTime))
     save(file=estResFilename, estRes)
 
     metaData <- list()
