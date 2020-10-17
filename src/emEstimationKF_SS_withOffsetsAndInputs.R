@@ -67,7 +67,7 @@ emEstimationKF_SS_withOffsetsAndInputs <- function(y, c, d, B0, u0, C0, Q0, Z0, 
         if (abs(cvg) < tol) {
             break
         }
-        ks <- smoothLDS_SS_withOffsetsAndInputs(B=B, u=u, C=C, c=c, Q=Q, xnn=kf$xnn, Vnn=kf$Vnn, xnn1=kf$xnn1, Vnn1=kf$Vnn1, m0=m0, V0=V0, initStateAt=0)
+        ks <- smoothLDS_SS(B=B, xnn=kf$xnn, Vnn=kf$Vnn, xnn1=kf$xnn1, Vnn1=kf$Vnn1, m0=m0, V0=V0)
         Vnn1N <- lag1CovSmootherLDS_SS(Z=Z, KN=kf$KN, B=B, Vnn=kf$Vnn, Jn=ks$Jn, J0=ks$J0)
         # begin compute summary statistics
         if(varsToEstimate$B || varsToEstimate$Q) {
