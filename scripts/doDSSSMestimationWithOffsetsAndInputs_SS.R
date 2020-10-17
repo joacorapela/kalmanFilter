@@ -4,12 +4,12 @@ require(ini)
 # require(reshape2)
 source("../src/emEstimationKF_SS_withOffsetsAndInputs.R")
 source("../src/filterLDS_SS_withOffsetsAndInputs.R")
-source("../src/smoothLDS_SS_withOffsetsAndInputs.R")
+source("../src/smoothLDS_SS.R")
 source("../src/estimateKFInitialCondFA.R")
 source("../src/estimateKFInitialCondPPCA.R")
 
 processAll <- function() {
-    estConfigNumber <- 3
+    estConfigNumber <- 1
     simResNumber <- 58388369
     simConfigFilenamePattern <- "data/%08d_simulation_metaData.ini"
     simResMetaDataFilenamePattern <- "results/%08d_simulation.ini"
@@ -26,6 +26,7 @@ processAll <- function() {
     simConfigFilename <- sprintf(simConfigFilenamePattern, simConfigNumber)
     simConfig <- read.ini(simConfigFilename)
 
+browser()
     sRate <- as.double(simConfig$control_variables$sRate)
     dt <- 1/sRate
     c <- as.matrix(read.table(simConfig$state_variables$cFilename))
