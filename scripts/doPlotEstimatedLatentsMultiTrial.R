@@ -1,5 +1,7 @@
 
 require(plotly)
+require(ini)
+require(RColorBrewer)
 source("../src/getPlotTrueInitialAndEstimatedMatrices.R")
 source("../src/getPlotTrueInitialAndEstimatedVectors.R")
 source("../src/filterLDS_SS.R")
@@ -10,7 +12,10 @@ processAll <- function() {
     # estResNumber <- 99485472
     # estResNumber <- 67957061
     # estResNumber <- 93973929
-    estResNumber <- 66860571
+    # estResNumber <- 66860571
+    # estResNumber <- 54015032
+    # estResNumber <- 60570612
+    estResNumber <- 89084189
     simFilenamePattern <- "results/%08d_simulation.RData"
     estResFilenamePattern <- "results/%08d_estimation.RData"
     estConfigFilenamePattern <- "data/%08d_estimation_metaData.ini"
