@@ -8,7 +8,7 @@ source("../src/estimateKFInitialCondPPCA.R")
 
 processAll <- function() {
     estConfigNumber <- 3
-    simResNumber <- 58388369
+    simResNumber <- 48364994
     simConfigFilenamePattern <- "data/%08d_simulation_metaData.ini"
     simResMetaDataFilenamePattern <- "results/%08d_simulation.ini"
     simResFilenamePattern <- "results/%s_simulation.RData"
