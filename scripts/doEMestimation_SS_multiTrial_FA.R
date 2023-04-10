@@ -9,7 +9,8 @@ source("../src/estimateKFInitialCondPPCA.R")
 
 processAll <- function() {
     estConfigNumber <- 4
-    simResNumber <- 79772839
+    # simResNumber <- 79772839
+    simResNumber <- 82902398
     simulationFilenamePattern <- "results/%s_simulation.RData"
 
     estConfigFilenamePattern <- "data/%08d_estimation_metaData.ini"
@@ -18,6 +19,8 @@ processAll <- function() {
     estFilenamePattern <- "results/%08d_estimation.RData"
 
     simulationFilename <- sprintf(simulationFilenamePattern, simResNumber)
+    simRes <- get(load(simulationFilename))
+    y <- simRes$y
 
     exit <- FALSE
     while(!exit) {
@@ -73,9 +76,6 @@ processAll <- function() {
 
     Q0 <- eval(parse(text=estConfig$initial_values$Q0))
     R0 <- eval(parse(text=estConfig$initial_values$R0))
-
-    simRes <- get(load(simulationFilename))
-    y <- simRes$y
 
     P <- dim(y)[2]
     N <- dim(y)[3]
