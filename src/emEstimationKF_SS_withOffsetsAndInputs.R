@@ -13,7 +13,7 @@ lag1CovSmootherLDS_SS <- function(Z, KN, B, Vnn, Jn, J0) {
     return(Vnn1N)
 }
 
-emEstimationKF_SS_withOffsetsAndInputs <- function(y, c, d, B0, u0, C0, Q0, Z0, a0, D0, R0, m0, V0, maxIter=50, tol=1e-4, varsToEstimate=list(initialStateMean=TRUE, initialStateCovariance=TRUE, transitionMatrix=TRUE, transitionCovariance=TRUE, observationMatrix=TRUE, observationCovariance=TRUE), covsConstraints=list(V0="diagonal and unequal", Q="diagonal and unequal", R="diagonal and unequal")) {
+emEstimationKF_SS_withOffsetsAndInputs <- function(y, c, d, B0, u0, C0, Q0, Z0, a0, D0, R0, m0, V0, minIter=0, maxIter=50, tol=1e-4, varsToEstimate=list(initialStateMean=TRUE, initialStateCovariance=TRUE, transitionMatrix=TRUE, transitionCovariance=TRUE, observationMatrix=TRUE, observationCovariance=TRUE), covsConstraints=list(V0="diagonal and unequal", Q="diagonal and unequal", R="diagonal and unequal")) {
     if(covsConstraints$V0=="diagonal and unequal") {
         nonDiagElems <- V0[col(V0)!=row(V0)]
         isDiag <- sum(nonDiagElems)==0
@@ -64,7 +64,7 @@ emEstimationKF_SS_withOffsetsAndInputs <- function(y, c, d, B0, u0, C0, Q0, Z0, 
             warning("Likelihood Not Increasing")
             break
         }
-        if (abs(cvg) < tol) {
+        if (iter>minIter && abs(cvg) < tol) {
             break
         }
         ks <- smoothLDS_SS(B=B, xnn=kf$xnn, Vnn=kf$Vnn, xnn1=kf$xnn1, Vnn1=kf$Vnn1, m0=m0, V0=V0)
@@ -267,6 +267,6 @@ emEstimationKF_SS_withOffsetsAndInputs <- function(y, c, d, B0, u0, C0, Q0, Z0, 
         }
         # end compute estimates
     }
-    answer <- list(B=B, u=u, C=C, Q=Q, Z=Z, a=a, D=D, R=R, m0=m0, V0=V0, logLike=logLike[1:iter], niter=iter, cvg=cvg, covsConstraints=covsConstraints)
+    answer <- list(B=B, u=u, C=C, Q=Q, Z=Z, a=a, D=D, R=R, m0=m0, V0=V0, xNN=ks$xnN[,,N], VNN=ks$VnN[,,N], logLike=logLike[1:iter], niter=iter, cvg=cvg, covsConstraints=covsConstraints)
     return(answer)
 }
