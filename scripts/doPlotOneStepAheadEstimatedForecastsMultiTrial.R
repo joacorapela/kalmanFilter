@@ -7,11 +7,14 @@ source("../src/getPlotTrueInitialAndEstimatedMatrices.R")
 source("../src/getPlotTrueInitialAndEstimatedVectors.R")
 
 processAll <- function() {
-    r <- 4
+    r <- 1
     testSimResNumber <- 79772839
     # testSimResNumber <- -1 # use train simulation
     # estResNumber <- 99485472
-    estResNumber <- 66860571
+    # estResNumber <- 66860571
+    # estResNumber <- 54015032
+    # estResNumber <- 60570612
+    estResNumber <- 89084189
     simFilenamePattern <- "results/%08d_simulation.RData"
     estResFilenamePattern <- "results/%08d_estimation.RData"
     estConfigFilenamePattern <- "data/%08d_estimation_metaData.ini"
