@@ -1,11 +1,15 @@
 *~
+*swp
 .RData
 .Rhistory
 shumwayAndStoffer11/*
 data/
 figures/
+results/
 scripts/results/*.RData
+scripts/results/*.mat
 scripts/data/*.ini
 scripts/results/*.ini
+scripts/log/
 fromSyncData
 toSyncData
