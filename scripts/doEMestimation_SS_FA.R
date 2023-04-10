@@ -11,13 +11,13 @@ source("../src/estimateKFInitialCondPPCA.R")
 processAll <- function() {
     estConfigNumber <- 2
     # simResNumber <- 95498373
-    simResNumber <- 21919562
+    # simResNumber <- 21919562
+    simResNumber <- 82902398
     simulationFilenamePattern <- "results/%s_simulation.RData"
 
     estResFilenamePattern <- "results/%08d_estimation.RData"
     estConfigFilenamePattern <- "data/%08d_estimation_metaData.ini"
     estResMetaDataFilenamePattern <- "results/%08d_estimation_metaData.ini"
-    estFilenamePattern <- "results/%08d_estimation.RData"
 
     simulationFilename <- sprintf(simulationFilenamePattern, simResNumber)
 
